@@ -38,3 +38,21 @@ add_executable(ark_analytic_nonlin
 target_link_libraries(ark_analytic_nonlin PUBLIC
   SUNDIALS::arkode
   m)
+
+add_executable(complex_ark
+  complex_ark.c)
+target_link_libraries(complex_ark PUBLIC
+  SUNDIALS::arkode
+  m)
+
+  add_executable(complex_erk
+  complex_erk.c)
+target_link_libraries(complex_erk PUBLIC
+  SUNDIALS::arkode
+  m)
+
+  add_executable(ark_system_of_ODEs
+  ark_system_of_ODEs.c)
+target_link_libraries(ark_system_of_ODEs PUBLIC
+  SUNDIALS::arkode
+  m)
