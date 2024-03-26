@@ -38,9 +38,3 @@ add_executable(ark_analytic_nonlin
 target_link_libraries(ark_analytic_nonlin PUBLIC
   SUNDIALS::arkode
   m)
-
-add_executable(cvRoberts_dns
-  cvRoberts_dns.c)
-target_link_libraries(cvRoberts_dns PUBLIC
-  SUNDIALS::cvode
-  m)
