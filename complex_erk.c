@@ -205,5 +205,3 @@ static int check_flag(void* flagvalue, const char* funcname, int opt)
 }
 
 /*---- end of file ----*/
-
-/* This is a dummy change for testing */
