@@ -21,41 +21,45 @@
 #include <sundials/sundials_core.h>
 #include "sundials/sundials_errors.h"
 
-#define ZERO   SUN_RCONST(0.0)
-#define HALF   SUN_RCONST(0.5)
-#define ONE    SUN_RCONST(1.0)
-#define ONEPT5 SUN_RCONST(1.5)
+#define ZERO   SUN_RCONST(0.0) // check every occurance!
+#define HALF   SUN_RCONST(0.5) // check every occurance!
+#define ONE    SUN_RCONST(1.0) // check every occurance!
+#define ONEPT5 SUN_RCONST(1.5) // check every occurance!
+
+#define CZERO       (ZERO + ZERO*I)
+#define HALFiHALF   (HALF + HALF*I) // check every occurance!
+#define CONE        (ONE + ONE*I) // check every occurance!
 
 /* Private functions for special cases of vector operations */
 static void VCopy_Mine(N_Vector x, N_Vector z);             /* z=x       */
 static void VSum_Mine(N_Vector x, N_Vector y, N_Vector z);  /* z=x+y     */
 static void VDiff_Mine(N_Vector x, N_Vector y, N_Vector z); /* z=x-y     */
 static void VNeg_Mine(N_Vector x, N_Vector z);              /* z=-x      */
-static void VScaleSum_Mine(sunrealtype c, N_Vector x, N_Vector y,
+static void VScaleSum_Mine(suncomplextype c, N_Vector x, N_Vector y,
                            N_Vector z); /* z=c(x+y)  */
-static void VScaleDiff_Mine(sunrealtype c, N_Vector x, N_Vector y,
+static void VScaleDiff_Mine(suncomplextype c, N_Vector x, N_Vector y,
                             N_Vector z); /* z=c(x-y)  */
-static void VLin1_Mine(sunrealtype a, N_Vector x, N_Vector y,
+static void VLin1_Mine(suncomplextype a, N_Vector x, N_Vector y,
                        N_Vector z); /* z=ax+y    */
-static void VLin2_Mine(sunrealtype a, N_Vector x, N_Vector y,
+static void VLin2_Mine(suncomplextype a, N_Vector x, N_Vector y,
                        N_Vector z);                            /* z=ax-y    */
-static void Vaxpy_Mine(sunrealtype a, N_Vector x, N_Vector y); /* y <- ax+y */
-static void VScaleBy_Mine(sunrealtype a, N_Vector x);          /* x <- ax   */
+static void Vaxpy_Mine(suncomplextype a, N_Vector x, N_Vector y); /* y <- ax+y */
+static void VScaleBy_Mine(suncomplextype a, N_Vector x);          /* x <- ax   */
 
 /* Private functions for special cases of vector array operations */
 static void VSumVectorArray_Mine(int nvec, N_Vector* X, N_Vector* Y,
                                  N_Vector* Z); /* Z=X+Y     */
 static void VDiffVectorArray_Mine(int nvec, N_Vector* X, N_Vector* Y,
                                   N_Vector* Z); /* Z=X-Y     */
-static void VScaleSumVectorArray_Mine(int nvec, sunrealtype c, N_Vector* X,
+static void VScaleSumVectorArray_Mine(int nvec, suncomplextype c, N_Vector* X,
                                       N_Vector* Y, N_Vector* Z); /* Z=c(X+Y)  */
-static void VScaleDiffVectorArray_Mine(int nvec, sunrealtype c, N_Vector* X,
+static void VScaleDiffVectorArray_Mine(int nvec, suncomplextype c, N_Vector* X,
                                        N_Vector* Y, N_Vector* Z); /* Z=c(X-Y)  */
-static void VLin1VectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VLin1VectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y, N_Vector* Z); /* Z=aX+Y    */
-static void VLin2VectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VLin2VectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y, N_Vector* Z); /* Z=aX-Y    */
-static void VaxpyVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VaxpyVectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y); /* Y <- aX+Y */
 
 /*
@@ -70,6 +74,7 @@ static void VaxpyVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
 
 N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
 {
+
   N_Vector v;
   My_NVectorContent content;
 
@@ -87,21 +92,38 @@ N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
   v->ops->nvcloneempty      = N_VCloneEmpty_Mine;
   v->ops->nvdestroy         = N_VDestroy_Mine;
   v->ops->nvspace           = N_VSpace_Mine;
-  v->ops->nvgetarraypointer = N_VGetArrayPointer_Mine;
-  v->ops->nvsetarraypointer = N_VSetArrayPointer_Mine;
+
+  // v->ops->nvgetarraypointer = N_VGetArrayPointer_Mine;
+  v->ops->nvgetarraypointer = N_VGetArrayPointer_Real;
+  
+  // v->ops->nvsetarraypointer = N_VSetArrayPointer_Mine;
+  v->ops->nvsetarraypointer = N_VSetArrayPointer_Real;
+  
   v->ops->nvgetlength       = N_VGetLength_Mine;
   v->ops->nvgetlocallength  = N_VGetLength_Mine;
 
   /* standard vector operations */
-  v->ops->nvlinearsum    = N_VLinearSum_Mine;
-  v->ops->nvconst        = N_VConst_Mine;
+  // v->ops->nvlinearsum    = N_VLinearSum_Mine;
+  v->ops->nvlinearsum    = N_VLinearSum_Real;
+  
+  // v->ops->nvconst        = N_VConst_Mine;
+  v->ops->nvconst        = N_VConst_Real;
+
   v->ops->nvprod         = N_VProd_Mine;
   v->ops->nvdiv          = N_VDiv_Mine;
-  v->ops->nvscale        = N_VScale_Mine;
+  
+  // v->ops->nvscale        = N_VScale_Mine;
+  v->ops->nvscale        = N_VScale_Real;
+  
   v->ops->nvabs          = N_VAbs_Mine;
   v->ops->nvinv          = N_VInv_Mine;
-  v->ops->nvaddconst     = N_VAddConst_Mine;
-  v->ops->nvdotprod      = N_VDotProd_Mine;
+
+  // v->ops->nvaddconst     = N_VAddConst_Mine;
+  v->ops->nvaddconst     = N_VAddConst_Real;
+
+  // v->ops->nvdotprod      = N_VDotProd_Mine;
+  v->ops->nvdotprod      = N_VDotProd_Real;
+
   v->ops->nvmaxnorm      = N_VMaxNorm_Mine;
   v->ops->nvwrmsnormmask = N_VWrmsNormMask_Mine;
   v->ops->nvwrmsnorm     = N_VWrmsNorm_Mine;
@@ -116,7 +138,9 @@ N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
   /* fused and vector array operations are disabled (NULL) by default */
 
   /* local reduction operations */
-  v->ops->nvdotprodlocal     = N_VDotProd_Mine;
+  // v->ops->nvdotprodlocal     = N_VDotProd_Mine;
+  v->ops->nvdotprodlocal     = N_VDotProd_Real;
+
   v->ops->nvmaxnormlocal     = N_VMaxNorm_Mine;
   v->ops->nvminlocal         = N_VMin_Mine;
   v->ops->nvl1normlocal      = N_VL1Norm_Mine;
@@ -127,7 +151,8 @@ N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
   v->ops->nvwsqrsummasklocal = N_VWSqrSumMaskLocal_Mine;
 
   /* single buffer reduction operations */
-  v->ops->nvdotprodmultilocal = N_VDotProdMulti_Mine;
+  // v->ops->nvdotprodmultilocal = N_VDotProdMulti_Mine;
+  v->ops->nvdotprodmultilocal = N_VDotProdMulti_Real;
 
   /* XBraid interface operations */
   v->ops->nvbufsize   = N_VBufSize_Mine;
@@ -149,7 +174,8 @@ N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
   /* Initialize content */
   content->length   = length;
   content->own_data = SUNFALSE;
-  content->data     = NULL;
+  content->real_data = NULL;
+  content->complex_data = NULL;
 
   return (v);
 }
@@ -161,7 +187,7 @@ N_Vector N_VNewEmpty_Mine(sunindextype length, SUNContext sunctx)
 N_Vector N_VNew_Mine(sunindextype length, SUNContext sunctx)
 {
   N_Vector v;
-  sunrealtype* data;
+  suncomplextype* complex_data;
 
   if (length < 0) { return NULL; }
 
@@ -170,16 +196,16 @@ N_Vector N_VNew_Mine(sunindextype length, SUNContext sunctx)
   if (v == NULL) { return NULL; }
 
   /* Create data */
-  data = NULL;
+  complex_data = NULL;
   if (length > 0)
   {
-    data = (sunrealtype*)malloc(length * sizeof(sunrealtype));
-    if (data == NULL) { return NULL; }
+    complex_data = (suncomplextype*)malloc(length * sizeof(suncomplextype));
+    if (complex_data == NULL) { return NULL; }
   }
 
   /* Attach data */
   MYNV_OWN_DATA(v) = SUNTRUE;
-  MYNV_DATA(v)     = data;
+  MYNV_COMPLEX_DATA(v) = complex_data;
 
   return (v);
 }
@@ -188,7 +214,7 @@ N_Vector N_VNew_Mine(sunindextype length, SUNContext sunctx)
  * Function to create a serial N_Vector with user data component
  */
 
-N_Vector N_VMake_Mine(sunindextype length, sunrealtype* v_data,
+N_Vector N_VMake_Mine(sunindextype length, suncomplextype* v_data,
                         SUNContext sunctx)
 {
   N_Vector v;
@@ -203,7 +229,7 @@ N_Vector N_VMake_Mine(sunindextype length, sunrealtype* v_data,
   {
     /* Attach data */
     MYNV_OWN_DATA(v) = SUNFALSE;
-    MYNV_DATA(v)     = v_data;
+    MYNV_COMPLEX_DATA(v) = v_data;
   }
 
   return (v);
@@ -230,21 +256,21 @@ void N_VPrint_Mine(N_Vector x)
 void N_VPrintFile_Mine(N_Vector x, FILE* outfile)
 {
   sunindextype i, N;
-  sunrealtype* xd;
+  suncomplextype* xd;
 
   xd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_COMPLEX_DATA(x);
 
   for (i = 0; i < N; i++)
   {
 #if defined(SUNDIALS_EXTENDED_PRECISION)
-    fprintf(outfile, "%35.32Le\n", xd[i]);
+    fprintf(outfile, "%35.32Le + i%35.32Le\n", creal(xd[i]), cimag(xd[i]));
 #elif defined(SUNDIALS_DOUBLE_PRECISION)
-    fprintf(outfile, "%19.16e\n", xd[i]);
+    fprintf(outfile, "%19.16e + i%19.16e\n", creal(xd[i]), cimag(xd[i]));
 #else
-    fprintf(outfile, "%11.8e\n", xd[i]);
+    fprintf(outfile, "%11.8e + i%11.8e\n", creal(xd[i]), cimag(xd[i]));
 #endif
   }
   fprintf(outfile, "\n");
@@ -282,7 +308,8 @@ N_Vector N_VCloneEmpty_Mine(N_Vector w)
   /* Initialize content */
   content->length   = MYNV_LENGTH(w);
   content->own_data = SUNFALSE;
-  content->data     = NULL;
+  content->real_data = NULL;
+  content->complex_data = NULL;
 
   return (v);
 }
@@ -290,7 +317,8 @@ N_Vector N_VCloneEmpty_Mine(N_Vector w)
 N_Vector N_VClone_Mine(N_Vector w)
 {
   N_Vector v;
-  sunrealtype* data;
+  sunrealtype* real_data;
+  suncomplextype* complex_data;
   sunindextype length;
 
   v = NULL;
@@ -299,16 +327,23 @@ N_Vector N_VClone_Mine(N_Vector w)
 
   length = MYNV_LENGTH(w);
 
-  /* Create data */
-  data = MYNV_DATA(v) = NULL;
+  /* Create complex_data */
+  complex_data = MYNV_COMPLEX_DATA(v) = NULL;
+  real_data = MYNV_REAL_DATA(v) = NULL;
   if (length > 0)
   {
-    data = (sunrealtype*)malloc(length * sizeof(sunrealtype));
-    if (data == NULL) { return NULL; }
+    complex_data = (suncomplextype*)malloc(length * sizeof(suncomplextype));
+    if (complex_data == NULL) { return NULL; }
+    
+    real_data = (sunrealtype*)malloc(length * sizeof(sunrealtype));
+    if (real_data == NULL) { return NULL; }
 
-    /* Attach data */
+    /* Attach real_data */
     MYNV_OWN_DATA(v) = SUNTRUE;
-    MYNV_DATA(v)     = data;
+    MYNV_REAL_DATA(v)     = real_data;
+
+    /* Attach complex_data */
+    MYNV_COMPLEX_DATA(v)     = complex_data;
   }
 
   return (v);
@@ -322,10 +357,15 @@ void N_VDestroy_Mine(N_Vector v)
   if (v->content != NULL)
   {
     /* free data array if it's owned by the vector */
-    if (MYNV_OWN_DATA(v) && MYNV_DATA(v) != NULL)
+    if (MYNV_OWN_DATA(v) && (MYNV_COMPLEX_DATA(v) != NULL))
     {
-      free(MYNV_DATA(v));
-      MYNV_DATA(v) = NULL;
+      free(MYNV_COMPLEX_DATA(v));
+      MYNV_COMPLEX_DATA(v) = NULL;
+    }
+    if (MYNV_OWN_DATA(v) && (MYNV_REAL_DATA(v) != NULL))
+    {
+      free(MYNV_REAL_DATA(v));
+      MYNV_REAL_DATA(v) = NULL;
     }
     free(v->content);
     v->content = NULL;
@@ -354,19 +394,128 @@ void N_VSpace_Mine(N_Vector v, sunindextype* lrw, sunindextype* liw)
   return;
 }
 
-sunrealtype* N_VGetArrayPointer_Mine(N_Vector v)
+suncomplextype* N_VGetArrayPointer_Mine(N_Vector v)
 {
-  return ((sunrealtype*)MYNV_DATA(v));
+    
+  return ((suncomplextype*)MYNV_COMPLEX_DATA(v));
 }
 
-void N_VSetArrayPointer_Mine(sunrealtype* v_data, N_Vector v)
+sunrealtype* N_VGetArrayPointer_Real(N_Vector v)
 {
-  if (MYNV_LENGTH(v) > 0) { MYNV_DATA(v) = v_data; }
+    
+  return ((sunrealtype*)MYNV_REAL_DATA(v));
+}
+
+void N_VSetArrayPointer_Mine(suncomplextype* v_data, N_Vector v)
+{
+  if (MYNV_LENGTH(v) > 0) { MYNV_COMPLEX_DATA(v) = v_data; }
 
   return;
 }
 
-void N_VLinearSum_Mine(sunrealtype a, N_Vector x, sunrealtype b, N_Vector y,
+void N_VSetArrayPointer_Real(sunrealtype* v_data, N_Vector v)
+{
+  if (MYNV_LENGTH(v) > 0) { MYNV_REAL_DATA(v) = v_data; }
+
+  return;
+}
+
+void N_VLinearSum_Mine(suncomplextype a, N_Vector x, suncomplextype b, N_Vector y,
+                       N_Vector z)
+{
+  sunindextype i, N;
+  suncomplextype c, *xd, *yd, *zd;
+  N_Vector v1, v2;
+  sunbooleantype test;
+
+  xd = yd = zd = NULL;
+
+  if (((creal(b) == ONE) && (cimag(b) == ZERO)) && (z == y))
+  { /* BLAS usage: axpy y <- ax+y */
+    Vaxpy_Mine(a, x, y);
+    return;
+  }
+
+  if (((creal(a) == ONE) && (cimag(a) == ZERO)) && (z == x))
+  { /* BLAS usage: axpy x <- by+x */
+    Vaxpy_Mine(b, y, x);
+    return;
+  }
+
+  /* Case: a == b == 1.0 */
+
+  if (((creal(a) == ONE) && (cimag(a) == ZERO)) && ((creal(b) == ONE) && (cimag(b) == ZERO)))
+  {
+    VSum_Mine(x, y, z);
+    return;
+  }
+
+  /* Cases: (1) a == 1.0, b = -1.0, (2) a == -1.0, b == 1.0 */
+
+  if ((test = (((creal(a) == ONE) && (cimag(a) == ZERO)) && ((creal(b) == -ONE) && (cimag(b) == ZERO)))) || (((creal(a) == -ONE) && (cimag(a) == ZERO)) && ((creal(b) == ONE) && (cimag(b) == ZERO))))
+  {
+    v1 = test ? y : x;
+    v2 = test ? x : y;
+    VDiff_Mine(v2, v1, z);
+    return;
+  }
+
+  /* Cases: (1) a == 1.0, b == other or 0.0, (2) a == other or 0.0, b == 1.0 */
+  /* if a or b is 0.0, then user should have called N_VScale */
+
+  if ((test = ((creal(a) == ONE) && (cimag(a) == ZERO))) || ((creal(b) == ONE) && (cimag(b) == ZERO)))
+  {
+    c  = test ? b : a;
+    v1 = test ? y : x;
+    v2 = test ? x : y;
+    VLin1_Mine(c, v1, v2, z);
+    return;
+  }
+
+  /* Cases: (1) a == -1.0, b != 1.0, (2) a != 1.0, b == -1.0 */
+
+  if ((test = ((creal(a) == -ONE) && (cimag(a) == ZERO))) || ((creal(b) == -ONE) && (cimag(b) == ZERO)))
+  {
+    c  = test ? b : a;
+    v1 = test ? y : x;
+    v2 = test ? x : y;
+    VLin2_Mine(c, v1, v2, z);
+    return;
+  }
+
+  /* Case: a == b */
+  /* catches case both a and b are 0.0 - user should have called N_VConst */
+
+  if (a == b)
+  {
+    VScaleSum_Mine(a, x, y, z);
+    return;
+  }
+
+  /* Case: a == -b */
+
+  if (a == -b)
+  {
+    VScaleDiff_Mine(a, x, y, z);
+    return;
+  }
+
+  /* Do all cases not handled above:
+     (1) a == other, b == 0.0 - user should have called N_VScale
+     (2) a == 0.0, b == other - user should have called N_VScale
+     (3) a,b == other, a !=b, a != -b */
+
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
+
+  for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + (b * yd[i]); }
+
+  return;
+}
+
+void N_VLinearSum_Real(sunrealtype a, N_Vector x, sunrealtype b, N_Vector y,
                        N_Vector z)
 {
   sunindextype i, N;
@@ -452,16 +601,31 @@ void N_VLinearSum_Mine(sunrealtype a, N_Vector x, sunrealtype b, N_Vector y,
      (3) a,b == other, a !=b, a != -b */
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_REAL_DATA(x);
+  yd = MYNV_REAL_DATA(y);
+  zd = MYNV_REAL_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + (b * yd[i]); }
 
   return;
 }
 
-void N_VConst_Mine(sunrealtype c, N_Vector z)
+void N_VConst_Mine(suncomplextype c, N_Vector z)
+{
+  sunindextype i, N;
+  suncomplextype* zd;
+
+  zd = NULL;
+
+  N  = MYNV_LENGTH(z);
+  zd = MYNV_COMPLEX_DATA(z);
+
+  for (i = 0; i < N; i++) { zd[i] = c; }
+
+  return;
+}
+
+void N_VConst_Real(sunrealtype c, N_Vector z)
 {
   sunindextype i, N;
   sunrealtype* zd;
@@ -469,7 +633,7 @@ void N_VConst_Mine(sunrealtype c, N_Vector z)
   zd = NULL;
 
   N  = MYNV_LENGTH(z);
-  zd = MYNV_DATA(z);
+  zd = MYNV_REAL_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = c; }
 
@@ -479,14 +643,14 @@ void N_VConst_Mine(sunrealtype c, N_Vector z)
 void N_VProd_Mine(N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] * yd[i]; }
 
@@ -496,22 +660,50 @@ void N_VProd_Mine(N_Vector x, N_Vector y, N_Vector z)
 void N_VDiv_Mine(N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
-
+  
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] / yd[i]; }
 
   return;
 }
 
-void N_VScale_Mine(sunrealtype c, N_Vector x, N_Vector z)
+void N_VScale_Mine(suncomplextype c, N_Vector x, N_Vector z)
 {
+  
+  sunindextype i, N;
+  suncomplextype *xd, *zd;
+
+  xd = zd = NULL;
+
+  if (z == x)
+  { /* BLAS usage: scale x <- cx */
+    VScaleBy_Mine(c, x);
+    return;
+  }
+
+  if ((creal(c) == ONE) && (cimag(c) == ZERO)) { VCopy_Mine(x, z); }
+  else if ((creal(c) == -ONE) && (cimag(c) == ZERO)) { VNeg_Mine(x, z); }
+  else
+  {
+    N  = MYNV_LENGTH(x);
+    xd = MYNV_COMPLEX_DATA(x);
+    zd = MYNV_COMPLEX_DATA(z);
+    for (i = 0; i < N; i++) { zd[i] = c * xd[i]; }
+  }
+
+  return;
+}
+
+void N_VScale_Real(sunrealtype c, N_Vector x, N_Vector z)
+{
+  
   sunindextype i, N;
   sunrealtype *xd, *zd;
 
@@ -523,31 +715,33 @@ void N_VScale_Mine(sunrealtype c, N_Vector x, N_Vector z)
     return;
   }
 
-  if (c == ONE) { VCopy_Mine(x, z); }
-  else if (c == -ONE) { VNeg_Mine(x, z); }
+  if ((creal(c) == ONE) && (cimag(c) == ZERO)) { VCopy_Mine(x, z); }
+  else if ((creal(c) == -ONE) && (cimag(c) == ZERO)) { VNeg_Mine(x, z); }
   else
   {
     N  = MYNV_LENGTH(x);
-    xd = MYNV_DATA(x);
-    zd = MYNV_DATA(z);
+    xd = MYNV_REAL_DATA(x);
+    zd = MYNV_REAL_DATA(z);
     for (i = 0; i < N; i++) { zd[i] = c * xd[i]; }
   }
 
   return;
 }
 
+
 void N_VAbs_Mine(N_Vector x, N_Vector z)
 {
+
   sunindextype i, N;
-  sunrealtype *xd, *zd;
+  suncomplextype *xd, *zd;
 
   xd = zd = NULL;
-
+  
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  zd = MYNV_COMPLEX_DATA(z);
 
-  for (i = 0; i < N; i++) { zd[i] = SUNRabs(xd[i]); }
+  for (i = 0; i < N; i++) { zd[i] = SUNCabs(xd[i]); }
 
   return;
 }
@@ -555,20 +749,36 @@ void N_VAbs_Mine(N_Vector x, N_Vector z)
 void N_VInv_Mine(N_Vector x, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *zd;
+  suncomplextype *xd, *zd;
 
   xd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  zd = MYNV_COMPLEX_DATA(z);
 
-  for (i = 0; i < N; i++) { zd[i] = ONE / xd[i]; }
+  for (i = 0; i < N; i++) { zd[i] = (suncomplextype)ONE / xd[i]; }
 
   return;
 }
 
-void N_VAddConst_Mine(N_Vector x, sunrealtype b, N_Vector z)
+void N_VAddConst_Mine(N_Vector x, suncomplextype b, N_Vector z)
+{
+  sunindextype i, N;
+  suncomplextype *xd, *zd;
+
+  xd = zd = NULL;
+
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_COMPLEX_DATA(x);
+  zd = MYNV_COMPLEX_DATA(z);
+
+  for (i = 0; i < N; i++) { zd[i] = xd[i] + b; }
+
+  return;
+}
+
+void N_VAddConst_Real(N_Vector x, sunrealtype b, N_Vector z)
 {
   sunindextype i, N;
   sunrealtype *xd, *zd;
@@ -576,15 +786,32 @@ void N_VAddConst_Mine(N_Vector x, sunrealtype b, N_Vector z)
   xd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_REAL_DATA(x);
+  zd = MYNV_REAL_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] + b; }
 
   return;
 }
 
-sunrealtype N_VDotProd_Mine(N_Vector x, N_Vector y)
+suncomplextype N_VDotProd_Mine(N_Vector x, N_Vector y)
+{
+  sunindextype i, N;
+  suncomplextype sum, *xd, *yd;
+
+  sum = (suncomplextype)ZERO;
+  xd = yd = NULL;
+
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+
+  for (i = 0; i < N; i++) { sum += xd[i] * conj(yd[i]); }
+
+  return (sum);
+}
+
+sunrealtype N_VDotProd_Real(N_Vector x, N_Vector y)
 {
   sunindextype i, N;
   sunrealtype sum, *xd, *yd;
@@ -593,8 +820,8 @@ sunrealtype N_VDotProd_Mine(N_Vector x, N_Vector y)
   xd = yd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
+  xd = MYNV_REAL_DATA(x);
+  yd = MYNV_REAL_DATA(y);
 
   for (i = 0; i < N; i++) { sum += xd[i] * yd[i]; }
 
@@ -604,17 +831,18 @@ sunrealtype N_VDotProd_Mine(N_Vector x, N_Vector y)
 sunrealtype N_VMaxNorm_Mine(N_Vector x)
 {
   sunindextype i, N;
-  sunrealtype max, *xd;
+  sunrealtype max;
+  suncomplextype *xd;
 
   max = ZERO;
   xd  = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_COMPLEX_DATA(x);
 
   for (i = 0; i < N; i++)
   {
-    if (SUNRabs(xd[i]) > max) { max = SUNRabs(xd[i]); }
+    if (SUNCabs(xd[i]) > max) { max = SUNCabs(xd[i]); }
   }
 
   return (max);
@@ -622,9 +850,12 @@ sunrealtype N_VMaxNorm_Mine(N_Vector x)
 
 sunrealtype N_VWrmsNorm_Mine(N_Vector x, N_Vector w)
 {
-  sunrealtype norm = N_VWSqrSumLocal_Mine(x, w);
-  norm = SUNRsqrt(norm / MYNV_LENGTH(x));
-  return norm;
+
+printf("sunrealtype N_VWrmsNorm_Mine(N_Vector x, N_Vector w) is not ready yet! Check myNvector.c\n");
+
+  // sunrealtype norm = N_VWSqrSumLocal_Mine(x, w);
+  // norm = SUNRsqrt(norm / MYNV_LENGTH(x));
+  // return norm;
 }
 
 sunrealtype N_VWSqrSumLocal_Mine(N_Vector x, N_Vector w)
@@ -632,50 +863,56 @@ sunrealtype N_VWSqrSumLocal_Mine(N_Vector x, N_Vector w)
   sunindextype i, N;
   sunrealtype sum, prodi, *xd, *wd;
 
+printf("sunrealtype N_VWSqrSumLocal_Mine(N_Vector x, N_Vector w) is not ready yet! Check myNvector.c\n");
+
   sum = ZERO;
   xd = wd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  wd = MYNV_DATA(w);
+  xd = MYNV_REAL_DATA(x);
+  wd = MYNV_REAL_DATA(w); //change to comlex might be required
 
-  for (i = 0; i < N; i++)
-  {
-    prodi = xd[i] * wd[i];
-    sum += SUNSQR(prodi);
-  }
+  // for (i = 0; i < N; i++)
+  // {
+  //   prodi = xd[i] * wd[i];
+  //   sum += SUNSQR(prodi);
+  // }
 
   return (sum);
 }
 
 sunrealtype N_VWrmsNormMask_Mine(N_Vector x, N_Vector w, N_Vector id)
 {
-  sunrealtype norm = N_VWSqrSumMaskLocal_Mine(x, w, id);
-  norm = SUNRsqrt(norm / MYNV_LENGTH(x));
-  return norm;
+printf("N_VWrmsNormMask_Mine(N_Vector x, N_Vector w, N_Vector id) is not ready yet! Check myNvector.c\n");
+
+  // sunrealtype norm = N_VWSqrSumMaskLocal_Mine(x, w, id);
+  // norm = SUNRsqrt(norm / MYNV_LENGTH(x));
+  // return norm;
 }
 
 sunrealtype N_VWSqrSumMaskLocal_Mine(N_Vector x, N_Vector w, N_Vector id)
 {
   sunindextype i, N;
-  sunrealtype sum, prodi, *xd, *wd, *idd;
+  suncomplextype sum, prodi, *xd, *wd, *idd;
 
-  sum = ZERO;
+  printf("sunrealtype N_VWSqrSumMaskLocal_Mine(N_Vector x, N_Vector w, N_Vector id) is not ready yet! Check myNvector.c\n");
+
+  sum = 0.0; //change to a complex ZERO!
   xd = wd = idd = NULL;
 
   N   = MYNV_LENGTH(x);
-  xd  = MYNV_DATA(x);
-  wd  = MYNV_DATA(w);
-  idd = MYNV_DATA(id);
+  xd  = MYNV_COMPLEX_DATA(x);
+  wd  = MYNV_COMPLEX_DATA(w);
+  idd = MYNV_COMPLEX_DATA(id);
 
-  for (i = 0; i < N; i++)
-  {
-    if (idd[i] > ZERO)
-    {
-      prodi = xd[i] * wd[i];
-      sum += SUNSQR(prodi);
-    }
-  }
+  // for (i = 0; i < N; i++)
+  // {
+  //   if (creal(idd[i]) > creal(ZERO))  //it used to be "if (idd[i] > ZERO)". Change this accordingly.
+  //   {
+  //     prodi = xd[i] * wd[i];
+  //     sum += SUNSQR(prodi);
+  //   }
+  // }
 
   return (sum);
 }
@@ -685,17 +922,19 @@ sunrealtype N_VMin_Mine(N_Vector x)
   sunindextype i, N;
   sunrealtype min, *xd;
 
-  xd = NULL;
+  printf("sunrealtype N_VMin_Mine(N_Vector x) is not ready yet! Check myNvector.c\n");
 
-  N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  // xd = NULL;
 
-  min = xd[0];
+  // N  = MYNV_LENGTH(x);
+  // xd = MYNV_REAL_DATA(x); //change to the complex data
 
-  for (i = 1; i < N; i++)
-  {
-    if (xd[i] < min) { min = xd[i]; }
-  }
+  // min = xd[0];
+
+  // for (i = 1; i < N; i++)
+  // {
+  //   if (xd[i] < min) { min = xd[i]; }
+  // }
 
   return (min);
 }
@@ -708,15 +947,17 @@ sunrealtype N_VWL2Norm_Mine(N_Vector x, N_Vector w)
   sum = ZERO;
   xd = wd = NULL;
 
-  N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  wd = MYNV_DATA(w);
+  printf("sunrealtype N_VWL2Norm_Mine(N_Vector x, N_Vector w) is not ready yet! Check myNvector.c\n");
 
-  for (i = 0; i < N; i++)
-  {
-    prodi = xd[i] * wd[i];
-    sum += SUNSQR(prodi);
-  }
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_REAL_DATA(x);
+  wd = MYNV_REAL_DATA(w);
+
+  // for (i = 0; i < N; i++)
+  // {
+  //   prodi = xd[i] * wd[i];
+  //   sum += SUNSQR(prodi);
+  // }
 
   return (SUNRsqrt(sum));
 }
@@ -724,15 +965,16 @@ sunrealtype N_VWL2Norm_Mine(N_Vector x, N_Vector w)
 sunrealtype N_VL1Norm_Mine(N_Vector x)
 {
   sunindextype i, N;
-  sunrealtype sum, *xd;
+  sunrealtype sum; 
+  suncomplextype *xd;
 
   sum = ZERO;
   xd  = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_COMPLEX_DATA(x);
 
-  for (i = 0; i < N; i++) { sum += SUNRabs(xd[i]); }
+  for (i = 0; i < N; i++) { sum += SUNCabs(xd[i]); }
 
   return (sum);
 }
@@ -742,13 +984,15 @@ void N_VCompare_Mine(sunrealtype c, N_Vector x, N_Vector z)
   sunindextype i, N;
   sunrealtype *xd, *zd;
 
+  printf("void N_VCompare_Mine(sunrealtype c, N_Vector x, N_Vector z) is not ready yet! Check myNvector.c\n");
+
   xd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_REAL_DATA(x);
+  zd = MYNV_REAL_DATA(z);
 
-  for (i = 0; i < N; i++) { zd[i] = (SUNRabs(xd[i]) >= c) ? ONE : ZERO; }
+  // for (i = 0; i < N; i++) { zd[i] = (SUNRabs(xd[i]) >= c) ? ONE : ZERO; }
 
   return;
 }
@@ -761,16 +1005,19 @@ sunbooleantype N_VInvTest_Mine(N_Vector x, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  printf("sunbooleantype N_VInvTest_Mine(N_Vector x, N_Vector z) is not ready yet! Check myNvector.c\n");
 
-  no_zero_found = SUNTRUE;
-  for (i = 0; i < N; i++)
-  {
-    if (xd[i] == ZERO) { no_zero_found = SUNFALSE; }
-    else { zd[i] = ONE / xd[i]; }
-  }
+
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_REAL_DATA(x);
+  zd = MYNV_REAL_DATA(z);
+
+  // no_zero_found = SUNTRUE;
+  // for (i = 0; i < N; i++)
+  // {
+  //   if (xd[i] == ZERO) { no_zero_found = SUNFALSE; }
+  //   else { zd[i] = ONE / xd[i]; }
+  // }
 
   return no_zero_found;
 }
@@ -782,12 +1029,14 @@ sunbooleantype N_VConstrMask_Mine(N_Vector c, N_Vector x, N_Vector m)
   sunrealtype *cd, *xd, *md;
   sunbooleantype test;
 
+  printf("sunbooleantype N_VConstrMask_Mine(N_Vector c, N_Vector x, N_Vector m) is not ready yet! Check myNvector.c\n");
+
   cd = xd = md = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  cd = MYNV_DATA(c);
-  md = MYNV_DATA(m);
+  xd = MYNV_REAL_DATA(x);
+  cd = MYNV_REAL_DATA(c);
+  md = MYNV_REAL_DATA(m);
 
   temp = ZERO;
 
@@ -816,26 +1065,28 @@ sunrealtype N_VMinQuotient_Mine(N_Vector num, N_Vector denom)
 
   nd = dd = NULL;
 
+  printf("sunrealtype N_VMinQuotient_Mine(N_Vector num, N_Vector denom) is not ready yet! Check myNvector.c\n");
+
   N  = MYNV_LENGTH(num);
-  nd = MYNV_DATA(num);
-  dd = MYNV_DATA(denom);
+  nd = MYNV_REAL_DATA(num);
+  dd = MYNV_REAL_DATA(denom);
 
   notEvenOnce = SUNTRUE;
   min         = SUN_BIG_REAL;
 
-  for (i = 0; i < N; i++)
-  {
-    if (dd[i] == ZERO) { continue; }
-    else
-    {
-      if (!notEvenOnce) { min = SUNMIN(min, nd[i] / dd[i]); }
-      else
-      {
-        min         = nd[i] / dd[i];
-        notEvenOnce = SUNFALSE;
-      }
-    }
-  }
+  // for (i = 0; i < N; i++)
+  // {
+  //   if (dd[i] == ZERO) { continue; }
+  //   else
+  //   {
+  //     if (!notEvenOnce) { min = SUNMIN(min, nd[i] / dd[i]); }
+  //     else
+  //     {
+  //       min         = nd[i] / dd[i];
+  //       notEvenOnce = SUNFALSE;
+  //     }
+  //   }
+  // }
 
   return (min);
 }
@@ -846,10 +1097,79 @@ sunrealtype N_VMinQuotient_Mine(N_Vector num, N_Vector denom)
  * -----------------------------------------------------------------
  */
 
-SUNErrCode N_VLinearCombination_Mine(int nvec, sunrealtype* c, N_Vector* X,
+SUNErrCode N_VLinearCombination_Mine(int nvec, suncomplextype* c, N_Vector* X,
                                      N_Vector z)
 {
+  int i;
+  sunindextype j, N;
+  suncomplextype* zd = NULL;
+  suncomplextype* xd = NULL;
 
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VScale */
+  if (nvec == 1)
+  {
+    N_VScale_Mine(c[0], X[0], z);
+    return SUN_SUCCESS;
+  }
+
+  /* should have called N_VLinearSum */
+  if (nvec == 2)
+  {
+    N_VLinearSum_Mine(c[0], X[0], c[1], X[1], z);
+    return SUN_SUCCESS;
+  }
+
+  /* get vector length and data array */
+  N  = MYNV_LENGTH(z);
+  zd = MYNV_COMPLEX_DATA(z);
+
+  /*
+   * X[0] += c[i]*X[i], i = 1,...,nvec-1
+   */
+  if ((X[0] == z) && ((creal(c[0]) == ONE) && (cimag(c[0]) == ZERO)))
+  {
+    for (i = 1; i < nvec; i++)
+    {
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * X[0] = c[0] * X[0] + sum{ c[i] * X[i] }, i = 1,...,nvec-1
+   */
+  if (X[0] == z)
+  {
+    for (j = 0; j < N; j++) { zd[j] *= c[0]; }
+    for (i = 1; i < nvec; i++)
+    {
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * z = sum{ c[i] * X[i] }, i = 0,...,nvec-1
+   */
+  xd = MYNV_COMPLEX_DATA(X[0]);
+  for (j = 0; j < N; j++) { zd[j] = c[0] * xd[j]; }
+  for (i = 1; i < nvec; i++)
+  {
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
+  }
+
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VLinearCombination_Real(int nvec, sunrealtype* c, N_Vector* X,
+                                     N_Vector z)
+{
   int i;
   sunindextype j, N;
   sunrealtype* zd = NULL;
@@ -874,7 +1194,7 @@ SUNErrCode N_VLinearCombination_Mine(int nvec, sunrealtype* c, N_Vector* X,
 
   /* get vector length and data array */
   N  = MYNV_LENGTH(z);
-  zd = MYNV_DATA(z);
+  zd = MYNV_REAL_DATA(z);
 
   /*
    * X[0] += c[i]*X[i], i = 1,...,nvec-1
@@ -883,7 +1203,7 @@ SUNErrCode N_VLinearCombination_Mine(int nvec, sunrealtype* c, N_Vector* X,
   {
     for (i = 1; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
+      xd = MYNV_REAL_DATA(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -897,7 +1217,7 @@ SUNErrCode N_VLinearCombination_Mine(int nvec, sunrealtype* c, N_Vector* X,
     for (j = 0; j < N; j++) { zd[j] *= c[0]; }
     for (i = 1; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
+      xd = MYNV_REAL_DATA(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -906,19 +1226,68 @@ SUNErrCode N_VLinearCombination_Mine(int nvec, sunrealtype* c, N_Vector* X,
   /*
    * z = sum{ c[i] * X[i] }, i = 0,...,nvec-1
    */
-  xd = MYNV_DATA(X[0]);
+  xd = MYNV_REAL_DATA(X[0]);
   for (j = 0; j < N; j++) { zd[j] = c[0] * xd[j]; }
   for (i = 1; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
+    xd = MYNV_REAL_DATA(X[i]);
     for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
+  }
+
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VScaleAddMulti_Mine(int nvec, suncomplextype* a, N_Vector x,
+                                 N_Vector* Y, N_Vector* Z)
+{  
+  int i;
+  sunindextype j, N;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VLinearSum */
+  if (nvec == 1)
+  {
+    N_VLinearSum_Mine(a[0], x, (suncomplextype)ONE, Y[0], Z[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* get vector length and data array */
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_COMPLEX_DATA(x);
+
+  /*
+   * Y[i][j] += a[i] * x[j]
+   */
+  if (Y == Z)
+  {
+    for (i = 0; i < nvec; i++)
+    {
+      yd = MYNV_COMPLEX_DATA(Y[i]);
+      for (j = 0; j < N; j++) { yd[j] += a[i] * xd[j]; }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * Z[i][j] = Y[i][j] + a[i] * x[j]
+   */
+  for (i = 0; i < nvec; i++)
+  {
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
+    for (j = 0; j < N; j++) { zd[j] = a[i] * xd[j] + yd[j]; }
   }
   return SUN_SUCCESS;
 }
 
-SUNErrCode N_VScaleAddMulti_Mine(int nvec, sunrealtype* a, N_Vector x,
+SUNErrCode N_VScaleAddMulti_Real(int nvec, sunrealtype* a, N_Vector x,
                                  N_Vector* Y, N_Vector* Z)
-{
+{  
   int i;
   sunindextype j, N;
   sunrealtype* xd = NULL;
@@ -937,7 +1306,7 @@ SUNErrCode N_VScaleAddMulti_Mine(int nvec, sunrealtype* a, N_Vector x,
 
   /* get vector length and data array */
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_REAL_DATA(x);
 
   /*
    * Y[i][j] += a[i] * x[j]
@@ -946,7 +1315,7 @@ SUNErrCode N_VScaleAddMulti_Mine(int nvec, sunrealtype* a, N_Vector x,
   {
     for (i = 0; i < nvec; i++)
     {
-      yd = MYNV_DATA(Y[i]);
+      yd = MYNV_REAL_DATA(Y[i]);
       for (j = 0; j < N; j++) { yd[j] += a[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -957,14 +1326,47 @@ SUNErrCode N_VScaleAddMulti_Mine(int nvec, sunrealtype* a, N_Vector x,
    */
   for (i = 0; i < nvec; i++)
   {
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    yd = MYNV_REAL_DATA(Y[i]);
+    zd = MYNV_REAL_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a[i] * xd[j] + yd[j]; }
   }
   return SUN_SUCCESS;
 }
 
 SUNErrCode N_VDotProdMulti_Mine(int nvec, N_Vector x, N_Vector* Y,
+                                suncomplextype* dotprods)
+{
+  int i;
+  sunindextype j, N;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VDotProd */
+  if (nvec == 1)
+  {
+    dotprods[0] = N_VDotProd_Mine(x, Y[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* get vector length and data array */
+  N  = MYNV_LENGTH(x);
+  xd = MYNV_COMPLEX_DATA(x);
+
+  /* compute multiple dot products */
+  for (i = 0; i < nvec; i++)
+  {
+    yd          = MYNV_COMPLEX_DATA(Y[i]);
+    dotprods[i] = (suncomplextype)ZERO;
+    for (j = 0; j < N; j++) { dotprods[i] += xd[j] * conj(yd[j]); }
+  }
+
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VDotProdMulti_Real(int nvec, N_Vector x, N_Vector* Y,
                                 sunrealtype* dotprods)
 {
   int i;
@@ -984,12 +1386,12 @@ SUNErrCode N_VDotProdMulti_Mine(int nvec, N_Vector x, N_Vector* Y,
 
   /* get vector length and data array */
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_REAL_DATA(x);
 
   /* compute multiple dot products */
   for (i = 0; i < nvec; i++)
   {
-    yd          = MYNV_DATA(Y[i]);
+    yd          = MYNV_REAL_DATA(Y[i]);
     dotprods[i] = ZERO;
     for (j = 0; j < N; j++) { dotprods[i] += xd[j] * yd[j]; }
   }
@@ -997,21 +1399,22 @@ SUNErrCode N_VDotProdMulti_Mine(int nvec, N_Vector x, N_Vector* Y,
   return SUN_SUCCESS;
 }
 
+
 /*
  * -----------------------------------------------------------------
  * vector array operations
  * -----------------------------------------------------------------
  */
 
-SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
-                                        sunrealtype b, N_Vector* Y, N_Vector* Z)
+SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
+                                        suncomplextype b, N_Vector* Y, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
-  sunrealtype c;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
+  suncomplextype c;
   N_Vector* V1;
   N_Vector* V2;
   sunbooleantype test;
@@ -1027,21 +1430,21 @@ SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
   }
 
   /* BLAS usage: axpy y <- ax+y */
-  if ((b == ONE) && (Z == Y))
+  if (((creal(b) == ONE) && (cimag(b)==ZERO)) && (Z == Y))
   {
     VaxpyVectorArray_Mine(nvec, a, X, Y);
     return SUN_SUCCESS;
   }
 
   /* BLAS usage: axpy x <- by+x */
-  if ((a == ONE) && (Z == X))
+  if (((creal(a) == ONE) && (cimag(a)==ZERO)) && (Z == X))
   {
     VaxpyVectorArray_Mine(nvec, b, Y, X);
     return SUN_SUCCESS;
   }
 
   /* Case: a == b == 1.0 */
-  if ((a == ONE) && (b == ONE))
+  if (((creal(a) == ONE) && (cimag(a)==ZERO)) && ((creal(b) == ONE) && (cimag(b)==ZERO)))
   {
     VSumVectorArray_Mine(nvec, X, Y, Z);
     return SUN_SUCCESS;
@@ -1050,7 +1453,7 @@ SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
   /* Cases:                    */
   /*   (1) a == 1.0, b = -1.0, */
   /*   (2) a == -1.0, b == 1.0 */
-  if ((test = ((a == ONE) && (b == -ONE))) || ((a == -ONE) && (b == ONE)))
+  if ((test = (((creal(a) == ONE) && (cimag(a)==ZERO)) && ((creal(b) == -ONE) && (cimag(b)==ZERO)))) || (((creal(a) == -ONE) && (cimag(a)==ZERO)) && ((creal(b) == ONE) && (cimag(b)==ZERO))))
   {
     V1 = test ? Y : X;
     V2 = test ? X : Y;
@@ -1062,7 +1465,7 @@ SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
   /*   (1) a == 1.0, b == other or 0.0,                      */
   /*   (2) a == other or 0.0, b == 1.0                       */
   /* if a or b is 0.0, then user should have called N_VScale */
-  if ((test = (a == ONE)) || (b == ONE))
+  if ((test = ((creal(a) == ONE) && (cimag(a)==ZERO))) || ((creal(b) == ONE) && (cimag(b)==ZERO)))
   {
     c  = test ? b : a;
     V1 = test ? Y : X;
@@ -1074,7 +1477,7 @@ SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
   /* Cases:                     */
   /*   (1) a == -1.0, b != 1.0, */
   /*   (2) a != 1.0, b == -1.0  */
-  if ((test = (a == -ONE)) || (b == -ONE))
+  if ((test = ((creal(a) == -ONE) && (cimag(a)==ZERO))) || ((creal(b) == -ONE) && (cimag(b)==ZERO)))
   {
     c  = test ? b : a;
     V1 = test ? Y : X;
@@ -1109,16 +1512,177 @@ SUNErrCode N_VLinearSumVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
   /* compute linear sum for each vector pair in vector arrays */
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a * xd[j] + b * yd[j]; }
   }
 
   return SUN_SUCCESS;
 }
 
-SUNErrCode N_VScaleVectorArray_Mine(int nvec, sunrealtype* c, N_Vector* X,
+SUNErrCode N_VLinearSumVectorArray_Real(int nvec, sunrealtype a, N_Vector* X,
+                                        sunrealtype b, N_Vector* Y, N_Vector* Z)
+{
+  int i;
+  sunindextype j, N;
+  sunrealtype* xd = NULL;
+  sunrealtype* yd = NULL;
+  sunrealtype* zd = NULL;
+  sunrealtype c;
+  N_Vector* V1;
+  N_Vector* V2;
+  sunbooleantype test;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VLinearSum */
+  if (nvec == 1)
+  {
+    N_VLinearSum_Mine(a, X[0], b, Y[0], Z[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* BLAS usage: axpy y <- ax+y */
+  if (((creal(b) == ONE) && (cimag(b)==ZERO)) && (Z == Y))
+  {
+    VaxpyVectorArray_Mine(nvec, a, X, Y);
+    return SUN_SUCCESS;
+  }
+
+  /* BLAS usage: axpy x <- by+x */
+  if (((creal(a) == ONE) && (cimag(a)==ZERO)) && (Z == X))
+  {
+    VaxpyVectorArray_Mine(nvec, b, Y, X);
+    return SUN_SUCCESS;
+  }
+
+  /* Case: a == b == 1.0 */
+  if (((creal(a) == ONE) && (cimag(a)==ZERO)) && ((creal(b) == ONE) && (cimag(b)==ZERO)))
+  {
+    VSumVectorArray_Mine(nvec, X, Y, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Cases:                    */
+  /*   (1) a == 1.0, b = -1.0, */
+  /*   (2) a == -1.0, b == 1.0 */
+  if ((test = (((creal(a) == ONE) && (cimag(a)==ZERO)) && ((creal(b) == -ONE) && (cimag(b)==ZERO)))) || (((creal(a) == -ONE) && (cimag(a)==ZERO)) && ((creal(b) == ONE) && (cimag(b)==ZERO))))
+  {
+    V1 = test ? Y : X;
+    V2 = test ? X : Y;
+    VDiffVectorArray_Mine(nvec, V2, V1, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Cases:                                                  */
+  /*   (1) a == 1.0, b == other or 0.0,                      */
+  /*   (2) a == other or 0.0, b == 1.0                       */
+  /* if a or b is 0.0, then user should have called N_VScale */
+  if ((test = ((creal(a) == ONE) && (cimag(a)==ZERO))) || ((creal(b) == ONE) && (cimag(b)==ZERO)))
+  {
+    c  = test ? b : a;
+    V1 = test ? Y : X;
+    V2 = test ? X : Y;
+    VLin1VectorArray_Mine(nvec, c, V1, V2, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Cases:                     */
+  /*   (1) a == -1.0, b != 1.0, */
+  /*   (2) a != 1.0, b == -1.0  */
+  if ((test = ((creal(a) == -ONE) && (cimag(a)==ZERO))) || ((creal(b) == -ONE) && (cimag(b)==ZERO)))
+  {
+    c  = test ? b : a;
+    V1 = test ? Y : X;
+    V2 = test ? X : Y;
+    VLin2VectorArray_Mine(nvec, c, V1, V2, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Case: a == b                                                         */
+  /* catches case both a and b are 0.0 - user should have called N_VConst */
+  if (a == b)
+  {
+    VScaleSumVectorArray_Mine(nvec, a, X, Y, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Case: a == -b */
+  if (a == -b)
+  {
+    VScaleDiffVectorArray_Mine(nvec, a, X, Y, Z);
+    return SUN_SUCCESS;
+  }
+
+  /* Do all cases not handled above:                               */
+  /*   (1) a == other, b == 0.0 - user should have called N_VScale */
+  /*   (2) a == 0.0, b == other - user should have called N_VScale */
+  /*   (3) a,b == other, a !=b, a != -b                            */
+
+  /* get vector length */
+  N = MYNV_LENGTH(Z[0]);
+
+  /* compute linear sum for each vector pair in vector arrays */
+  for (i = 0; i < nvec; i++)
+  {
+    xd = MYNV_REAL_DATA(X[i]);
+    yd = MYNV_REAL_DATA(Y[i]);
+    zd = MYNV_REAL_DATA(Z[i]);
+    for (j = 0; j < N; j++) { zd[j] = a * xd[j] + b * yd[j]; }
+  }
+
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VScaleVectorArray_Mine(int nvec, suncomplextype* c, N_Vector* X,
+                                    N_Vector* Z)
+{
+  int i;
+  sunindextype j, N;
+  suncomplextype* xd = NULL;
+  suncomplextype* zd = NULL;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VScale */
+  if (nvec == 1)
+  {
+    N_VScale_Mine(c[0], X[0], Z[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* get vector length */
+  N = MYNV_LENGTH(Z[0]);
+
+  /*
+   * X[i] *= c[i]
+   */
+  if (X == Z)
+  {
+    for (i = 0; i < nvec; i++)
+    {
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      for (j = 0; j < N; j++) { xd[j] *= c[i]; }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * Z[i] = c[i] * X[i]
+   */
+  for (i = 0; i < nvec; i++)
+  {
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
+    for (j = 0; j < N; j++) { zd[j] = c[i] * xd[j]; }
+  }
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VScaleVectorArray_Real(int nvec, sunrealtype* c, N_Vector* X,
                                     N_Vector* Z)
 {
   int i;
@@ -1146,7 +1710,7 @@ SUNErrCode N_VScaleVectorArray_Mine(int nvec, sunrealtype* c, N_Vector* X,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
+      xd = MYNV_REAL_DATA(X[i]);
       for (j = 0; j < N; j++) { xd[j] *= c[i]; }
     }
     return SUN_SUCCESS;
@@ -1157,14 +1721,43 @@ SUNErrCode N_VScaleVectorArray_Mine(int nvec, sunrealtype* c, N_Vector* X,
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_REAL_DATA(X[i]);
+    zd = MYNV_REAL_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c[i] * xd[j]; }
   }
   return SUN_SUCCESS;
 }
 
-SUNErrCode N_VConstVectorArray_Mine(int nvec, sunrealtype c, N_Vector* Z)
+SUNErrCode N_VConstVectorArray_Mine(int nvec, suncomplextype c, N_Vector* Z)
+{
+  int i;
+  sunindextype j, N;
+  suncomplextype* zd = NULL;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* should have called N_VConst */
+  if (nvec == 1)
+  {
+    N_VConst_Mine((suncomplextype)ONE, Z[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* get vector length */
+  N = MYNV_LENGTH(Z[0]);
+
+  /* set each vector in the vector array to a constant */
+  for (i = 0; i < nvec; i++)
+  {
+    zd = MYNV_COMPLEX_DATA(Z[i]);
+    for (j = 0; j < N; j++) { zd[j] = c; }
+  }
+
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VConstVectorArray_Real(int nvec, sunrealtype c, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
@@ -1176,7 +1769,7 @@ SUNErrCode N_VConstVectorArray_Mine(int nvec, sunrealtype c, N_Vector* Z)
   /* should have called N_VConst */
   if (nvec == 1)
   {
-    N_VConst_Mine(c, Z[0]);
+    N_VConst_Mine(ONE, Z[0]);
     return SUN_SUCCESS;
   }
 
@@ -1186,7 +1779,7 @@ SUNErrCode N_VConstVectorArray_Mine(int nvec, sunrealtype c, N_Vector* Z)
   /* set each vector in the vector array to a constant */
   for (i = 0; i < nvec; i++)
   {
-    zd = MYNV_DATA(Z[i]);
+    zd = MYNV_REAL_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c; }
   }
 
@@ -1207,18 +1800,20 @@ SUNErrCode N_VWrmsNormVectorArray_Mine(int nvec, N_Vector* X, N_Vector* W,
   /* should have called N_VWrmsNorm */
   if (nvec == 1)
   {
-    nrm[0] = N_VWrmsNorm_Mine(X[0], W[0]);
+    nrm[0] = N_VWrmsNorm_Mine(X[0], W[0]); //this function is not ready yet!
     return SUN_SUCCESS;
   }
 
   /* get vector length */
   N = MYNV_LENGTH(X[0]);
 
+  printf("SUNErrCode N_VWrmsNormVectorArray_Mine(int nvec, N_Vector* X, N_Vector* W, sunrealtype* nrm) is not ready yet! Check myNvector.c\n");
+
   /* compute the WRMS norm for each vector in the vector array */
   for (i = 0; i < nvec; i++)
   {
-    xd     = MYNV_DATA(X[i]);
-    wd     = MYNV_DATA(W[i]);
+    xd     = MYNV_REAL_DATA(X[i]); //change to complex data
+    wd     = MYNV_REAL_DATA(W[i]); //change to complex data
     nrm[i] = ZERO;
     for (j = 0; j < N; j++) { nrm[i] += SUNSQR(xd[j] * wd[j]); }
     nrm[i] = SUNRsqrt(nrm[i] / N);
@@ -1246,15 +1841,18 @@ SUNErrCode N_VWrmsNormMaskVectorArray_Mine(int nvec, N_Vector* X, N_Vector* W,
     return SUN_SUCCESS;
   }
 
+  printf("SUNErrCode N_VWrmsNormMaskVectorArray_Mine(int nvec, N_Vector* X, N_Vector* W, N_Vector id, sunrealtype* nrm) is not ready yet! Check myNvector.c\n");
+
+
   /* get vector length and mask data array */
   N   = MYNV_LENGTH(X[0]);
-  idd = MYNV_DATA(id);
+  idd = MYNV_REAL_DATA(id); //change to complex data
 
   /* compute the WRMS norm for each vector in the vector array */
   for (i = 0; i < nvec; i++)
   {
-    xd     = MYNV_DATA(X[i]);
-    wd     = MYNV_DATA(W[i]);
+    xd     = MYNV_REAL_DATA(X[i]); //change to complex data
+    wd     = MYNV_REAL_DATA(W[i]); //change to complex data
     nrm[i] = ZERO;
     for (j = 0; j < N; j++)
     {
@@ -1267,6 +1865,106 @@ SUNErrCode N_VWrmsNormMaskVectorArray_Mine(int nvec, N_Vector* X, N_Vector* W,
 }
 
 SUNErrCode N_VScaleAddMultiVectorArray_Mine(int nvec, int nsum,
+                                            suncomplextype* a, N_Vector* X,
+                                            N_Vector** Y, N_Vector** Z)
+{
+  int i, j;
+  sunindextype k, N;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
+  N_Vector* YY;
+  N_Vector* ZZ;
+
+  /* invalid number of vectors */
+  if (nvec < 0) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* ---------------------------
+   * Special cases for nvec == 1
+   * --------------------------- */
+
+  if (nvec == 1)
+  {
+    /* should have called N_VLinearSum */
+    if (nsum == 1)
+    {
+      N_VLinearSum_Mine(a[0], X[0], (suncomplextype)ONE, Y[0][0], Z[0][0]);
+
+      return SUN_SUCCESS;
+    }
+
+    /* should have called N_VScaleAddMulti */
+    YY = (N_Vector*)malloc(nsum * sizeof(N_Vector));
+    if (YY == NULL) { return SUN_ERR_MALLOC_FAIL; }
+    ZZ = (N_Vector*)malloc(nsum * sizeof(N_Vector));
+    if (ZZ == NULL) { return SUN_ERR_MALLOC_FAIL; }
+
+    for (j = 0; j < nsum; j++)
+    {
+      YY[j] = Y[j][0];
+      ZZ[j] = Z[j][0];
+    }
+
+    N_VScaleAddMulti_Mine(nsum, a, X[0], YY, ZZ);
+
+    free(YY);
+    free(ZZ);
+
+    return SUN_SUCCESS;
+  }
+
+  /* --------------------------
+   * Special cases for nvec > 1
+   * -------------------------- */
+
+  /* should have called N_VLinearSumVectorArray */
+  if (nsum == 1)
+  {
+    N_VLinearSumVectorArray_Mine(nvec, a[0], X, (suncomplextype)ONE, Y[0], Z[0]);
+    return SUN_SUCCESS;
+  }
+
+  /* ----------------------------
+   * Compute multiple linear sums
+   * ---------------------------- */
+
+  /* get vector length */
+  N = MYNV_LENGTH(X[0]);
+
+  /*
+   * Y[i][j] += a[i] * x[j]
+   */
+  if (Y == Z)
+  {
+    for (i = 0; i < nvec; i++)
+    {
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      for (j = 0; j < nsum; j++)
+      {
+        yd = MYNV_COMPLEX_DATA(Y[j][i]);
+        for (k = 0; k < N; k++) { yd[k] += a[j] * xd[k]; }
+      }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * Z[i][j] = Y[i][j] + a[i] * x[j]
+   */
+  for (i = 0; i < nvec; i++)
+  {
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    for (j = 0; j < nsum; j++)
+    {
+      yd = MYNV_COMPLEX_DATA(Y[j][i]);
+      zd = MYNV_COMPLEX_DATA(Z[j][i]);
+      for (k = 0; k < N; k++) { zd[k] = a[j] * xd[k] + yd[k]; }
+    }
+  }
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VScaleAddMultiVectorArray_Real(int nvec, int nsum,
                                             sunrealtype* a, N_Vector* X,
                                             N_Vector** Y, N_Vector** Z)
 {
@@ -1291,6 +1989,7 @@ SUNErrCode N_VScaleAddMultiVectorArray_Mine(int nvec, int nsum,
     if (nsum == 1)
     {
       N_VLinearSum_Mine(a[0], X[0], ONE, Y[0][0], Z[0][0]);
+
       return SUN_SUCCESS;
     }
 
@@ -1306,7 +2005,7 @@ SUNErrCode N_VScaleAddMultiVectorArray_Mine(int nvec, int nsum,
       ZZ[j] = Z[j][0];
     }
 
-    N_VScaleAddMulti_Mine(nsum, a, X[0], YY, ZZ);
+    N_VScaleAddMulti_Mine(nsum, (suncomplextype*)a, X[0], YY, ZZ);
 
     free(YY);
     free(ZZ);
@@ -1339,10 +2038,10 @@ SUNErrCode N_VScaleAddMultiVectorArray_Mine(int nvec, int nsum,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
+      xd = MYNV_REAL_DATA(X[i]);
       for (j = 0; j < nsum; j++)
       {
-        yd = MYNV_DATA(Y[j][i]);
+        yd = MYNV_REAL_DATA(Y[j][i]);
         for (k = 0; k < N; k++) { yd[k] += a[j] * xd[k]; }
       }
     }
@@ -1354,28 +2053,50 @@ SUNErrCode N_VScaleAddMultiVectorArray_Mine(int nvec, int nsum,
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
+    xd = MYNV_REAL_DATA(X[i]);
     for (j = 0; j < nsum; j++)
     {
-      yd = MYNV_DATA(Y[j][i]);
-      zd = MYNV_DATA(Z[j][i]);
+      yd = MYNV_REAL_DATA(Y[j][i]);
+      zd = MYNV_REAL_DATA(Z[j][i]);
       for (k = 0; k < N; k++) { zd[k] = a[j] * xd[k] + yd[k]; }
     }
   }
   return SUN_SUCCESS;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
-                                                sunrealtype* c, N_Vector** X,
+                                                suncomplextype* c, N_Vector** X,
                                                 N_Vector* Z)
 {
   int i;          /* vector arrays index in summation [0,nsum) */
   int j;          /* vector index in vector array     [0,nvec) */
   sunindextype k; /* element index in vector          [0,N)    */
   sunindextype N;
-  sunrealtype* zd = NULL;
-  sunrealtype* xd = NULL;
-  sunrealtype* ctmp;
+  suncomplextype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* ctmp;
   N_Vector* Y;
 
   /* invalid number of vectors */
@@ -1421,7 +2142,7 @@ SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
   /* should have called N_VScaleVectorArray */
   if (nsum == 1)
   {
-    ctmp = (sunrealtype*)malloc(nvec * sizeof(sunrealtype));
+    ctmp = (suncomplextype*)malloc(nvec * sizeof(suncomplextype));
     if (ctmp == NULL) { return SUN_ERR_MALLOC_FAIL; }
 
     for (j = 0; j < nvec; j++) { ctmp[j] = c[0]; }
@@ -1449,14 +2170,14 @@ SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
   /*
    * X[0][j] += c[i]*X[i][j], i = 1,...,nvec-1
    */
-  if ((X[0] == Z) && (c[0] == ONE))
+  if ((X[0] == Z) && ((creal(c[0]) == ONE) && cimag(c[0]) == ZERO))
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = MYNV_DATA(Z[j]);
+      zd = MYNV_COMPLEX_DATA(Z[j]);
       for (i = 1; i < nsum; i++)
       {
-        xd = MYNV_DATA(X[i][j]);
+        xd = MYNV_COMPLEX_DATA(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -1470,11 +2191,11 @@ SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = MYNV_DATA(Z[j]);
+      zd = MYNV_COMPLEX_DATA(Z[j]);
       for (k = 0; k < N; k++) { zd[k] *= c[0]; }
       for (i = 1; i < nsum; i++)
       {
-        xd = MYNV_DATA(X[i][j]);
+        xd = MYNV_COMPLEX_DATA(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -1486,12 +2207,145 @@ SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
    */
   for (j = 0; j < nvec; j++)
   {
-    xd = MYNV_DATA(X[0][j]);
-    zd = MYNV_DATA(Z[j]);
+    xd = MYNV_COMPLEX_DATA(X[0][j]);
+    zd = MYNV_COMPLEX_DATA(Z[j]);
     for (k = 0; k < N; k++) { zd[k] = c[0] * xd[k]; }
     for (i = 1; i < nsum; i++)
     {
-      xd = MYNV_DATA(X[i][j]);
+      xd = MYNV_COMPLEX_DATA(X[i][j]);
+      for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
+    }
+  }
+  return SUN_SUCCESS;
+}
+
+SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
+                                                sunrealtype* c, N_Vector** X,
+                                                N_Vector* Z)
+{
+  int i;          /* vector arrays index in summation [0,nsum) */
+  int j;          /* vector index in vector array     [0,nvec) */
+  sunindextype k; /* element index in vector          [0,N)    */
+  sunindextype N;
+  sunrealtype* zd = NULL;
+  sunrealtype* xd = NULL;
+  sunrealtype* ctmp;
+  N_Vector* Y;
+
+  /* invalid number of vectors */
+  if ((nvec < 1) || (nsum < 1)) { return SUN_ERR_ARG_OUTOFRANGE; }
+
+  /* ---------------------------
+   * Special cases for nvec == 1
+   * --------------------------- */
+
+  if (nvec == 1)
+  {
+    /* should have called N_VScale */
+    if (nsum == 1)
+    {
+      N_VScale_Mine(c[0], X[0][0], Z[0]);
+      return SUN_SUCCESS;
+    }
+
+    /* should have called N_VLinearSum */
+    if (nsum == 2)
+    {
+      N_VLinearSum_Mine(c[0], X[0][0], c[1], X[1][0], Z[0]);
+      return SUN_SUCCESS;
+    }
+
+    /* should have called N_VLinearCombination */
+    Y = (N_Vector*)malloc(nsum * sizeof(N_Vector));
+    if (Y == NULL) { return SUN_ERR_MALLOC_FAIL; }
+
+    for (i = 0; i < nsum; i++) { Y[i] = X[i][0]; }
+
+    N_VLinearCombination_Mine(nsum, (suncomplextype*)c, Y, Z[0]);
+
+    free(Y);
+
+    return SUN_SUCCESS;
+  }
+
+  /* --------------------------
+   * Special cases for nvec > 1
+   * -------------------------- */
+
+  /* should have called N_VScaleVectorArray */
+  if (nsum == 1)
+  {
+    ctmp = (sunrealtype*)malloc(nvec * sizeof(sunrealtype));
+    if (ctmp == NULL) { return SUN_ERR_MALLOC_FAIL; }
+
+    for (j = 0; j < nvec; j++) { ctmp[j] = c[0]; }
+
+    N_VScaleVectorArray_Mine(nvec, (suncomplextype*)ctmp, X[0], Z);
+
+    free(ctmp);
+    return SUN_SUCCESS;
+  }
+
+  /* should have called N_VLinearSumVectorArray */
+  if (nsum == 2)
+  {
+    N_VLinearSumVectorArray_Mine(nvec, c[0], X[0], c[1], X[1], Z);
+    return SUN_SUCCESS;
+  }
+
+  /* --------------------------
+   * Compute linear combination
+   * -------------------------- */
+
+  /* get vector length */
+  N = MYNV_LENGTH(Z[0]);
+
+  /*
+   * X[0][j] += c[i]*X[i][j], i = 1,...,nvec-1
+   */
+  if ((X[0] == Z) && ((creal(c[0]) == ONE) && cimag(c[0]) == ZERO))
+  {
+    for (j = 0; j < nvec; j++)
+    {
+      zd = MYNV_REAL_DATA(Z[j]);
+      for (i = 1; i < nsum; i++)
+      {
+        xd = MYNV_REAL_DATA(X[i][j]);
+        for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
+      }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * X[0][j] = c[0] * X[0][j] + sum{ c[i] * X[i][j] }, i = 1,...,nvec-1
+   */
+  if (X[0] == Z)
+  {
+    for (j = 0; j < nvec; j++)
+    {
+      zd = MYNV_REAL_DATA(Z[j]);
+      for (k = 0; k < N; k++) { zd[k] *= c[0]; }
+      for (i = 1; i < nsum; i++)
+      {
+        xd = MYNV_REAL_DATA(X[i][j]);
+        for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
+      }
+    }
+    return SUN_SUCCESS;
+  }
+
+  /*
+   * Z[j] = sum{ c[i] * X[i][j] }, i = 0,...,nvec-1
+   */
+  for (j = 0; j < nvec; j++)
+  {
+    xd = MYNV_REAL_DATA(X[0][j]);
+    zd = MYNV_REAL_DATA(Z[j]);
+    for (k = 0; k < N; k++) { zd[k] = c[0] * xd[k]; }
+    for (i = 1; i < nsum; i++)
+    {
+      xd = MYNV_REAL_DATA(X[i][j]);
       for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
     }
   }
@@ -1506,21 +2360,23 @@ SUNErrCode N_VLinearCombinationVectorArray_Mine(int nvec, int nsum,
 
 SUNErrCode N_VBufSize_Mine(N_Vector x, sunindextype* size)
 {
-  *size = MYNV_LENGTH(x) * ((sunindextype)sizeof(sunrealtype));
+  *size = MYNV_LENGTH(x) * ((sunindextype)sizeof(suncomplextype));
   return SUN_SUCCESS;
 }
 
 SUNErrCode N_VBufPack_Mine(N_Vector x, void* buf)
 {
   sunindextype i, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* bd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* bd = NULL;
 
   if (buf == NULL) { return SUN_ERR_ARG_CORRUPT; }
+  
+    printf("SUNErrCode N_VBufPack_Mine(N_Vector x, void* buf) is not ready yet! Check myNvector.c\n");
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  bd = (sunrealtype*)buf;
+  xd = MYNV_COMPLEX_DATA(x);
+  bd = (suncomplextype*)buf;
 
   for (i = 0; i < N; i++) { bd[i] = xd[i]; }
 
@@ -1530,14 +2386,16 @@ SUNErrCode N_VBufPack_Mine(N_Vector x, void* buf)
 SUNErrCode N_VBufUnpack_Mine(N_Vector x, void* buf)
 {
   sunindextype i, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* bd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* bd = NULL;
+
+  printf("SUNErrCode N_VBufUnpack_Mine(N_Vector x, void* buf) is not ready yet! Check myNvector.c\n");
 
   if (buf == NULL) { return SUN_ERR_ARG_CORRUPT; }
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  bd = (sunrealtype*)buf;
+  xd = MYNV_COMPLEX_DATA(x);
+  bd = (suncomplextype*)buf;
 
   for (i = 0; i < N; i++) { xd[i] = bd[i]; }
 
@@ -1553,13 +2411,13 @@ SUNErrCode N_VBufUnpack_Mine(N_Vector x, void* buf)
 static void VCopy_Mine(N_Vector x, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *zd;
+  suncomplextype *xd, *zd;
 
   xd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i]; }
 
@@ -1569,14 +2427,14 @@ static void VCopy_Mine(N_Vector x, N_Vector z)
 static void VSum_Mine(N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] + yd[i]; }
 
@@ -1586,14 +2444,14 @@ static void VSum_Mine(N_Vector x, N_Vector y, N_Vector z)
 static void VDiff_Mine(N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] - yd[i]; }
 
@@ -1603,105 +2461,105 @@ static void VDiff_Mine(N_Vector x, N_Vector y, N_Vector z)
 static void VNeg_Mine(N_Vector x, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *zd;
+  suncomplextype *xd, *zd;
 
   xd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = -xd[i]; }
 
   return;
 }
 
-static void VScaleSum_Mine(sunrealtype c, N_Vector x, N_Vector y, N_Vector z)
+static void VScaleSum_Mine(suncomplextype c, N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = c * (xd[i] + yd[i]); }
 
   return;
 }
 
-static void VScaleDiff_Mine(sunrealtype c, N_Vector x, N_Vector y, N_Vector z)
+static void VScaleDiff_Mine(suncomplextype c, N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = c * (xd[i] - yd[i]); }
 
   return;
 }
 
-static void VLin1_Mine(sunrealtype a, N_Vector x, N_Vector y, N_Vector z)
+static void VLin1_Mine(suncomplextype a, N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + yd[i]; }
 
   return;
 }
 
-static void VLin2_Mine(sunrealtype a, N_Vector x, N_Vector y, N_Vector z)
+static void VLin2_Mine(suncomplextype a, N_Vector x, N_Vector y, N_Vector z)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd, *zd;
+  suncomplextype *xd, *yd, *zd;
 
   xd = yd = zd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
-  zd = MYNV_DATA(z);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
+  zd = MYNV_COMPLEX_DATA(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) - yd[i]; }
 
   return;
 }
 
-static void Vaxpy_Mine(sunrealtype a, N_Vector x, N_Vector y)
+static void Vaxpy_Mine(suncomplextype a, N_Vector x, N_Vector y)
 {
   sunindextype i, N;
-  sunrealtype *xd, *yd;
+  suncomplextype *xd, *yd;
 
   xd = yd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
-  yd = MYNV_DATA(y);
+  xd = MYNV_COMPLEX_DATA(x);
+  yd = MYNV_COMPLEX_DATA(y);
 
-  if (a == ONE)
+  if ((creal(a) == ONE) && (cimag(a) == ZERO))
   {
     for (i = 0; i < N; i++) { yd[i] += xd[i]; }
     return;
   }
 
-  if (a == -ONE)
+  if ((creal(a) == -ONE) && (cimag(a) == ZERO))
   {
     for (i = 0; i < N; i++) { yd[i] -= xd[i]; }
     return;
@@ -1712,15 +2570,15 @@ static void Vaxpy_Mine(sunrealtype a, N_Vector x, N_Vector y)
   return;
 }
 
-static void VScaleBy_Mine(sunrealtype a, N_Vector x)
+static void VScaleBy_Mine(suncomplextype a, N_Vector x)
 {
   sunindextype i, N;
-  sunrealtype* xd;
+  suncomplextype* xd;
 
   xd = NULL;
 
   N  = MYNV_LENGTH(x);
-  xd = MYNV_DATA(x);
+  xd = MYNV_COMPLEX_DATA(x);
 
   for (i = 0; i < N; i++) { xd[i] *= a; }
 
@@ -1737,17 +2595,17 @@ static void VSumVectorArray_Mine(int nvec, N_Vector* X, N_Vector* Y, N_Vector* Z
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = xd[j] + yd[j]; }
   }
 }
@@ -1757,128 +2615,128 @@ static void VDiffVectorArray_Mine(int nvec, N_Vector* X, N_Vector* Y,
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = xd[j] - yd[j]; }
   }
 }
 
-static void VScaleSumVectorArray_Mine(int nvec, sunrealtype c, N_Vector* X,
+static void VScaleSumVectorArray_Mine(int nvec, suncomplextype c, N_Vector* X,
                                       N_Vector* Y, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c * (xd[j] + yd[j]); }
   }
 }
 
-static void VScaleDiffVectorArray_Mine(int nvec, sunrealtype c, N_Vector* X,
+static void VScaleDiffVectorArray_Mine(int nvec, suncomplextype c, N_Vector* X,
                                        N_Vector* Y, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c * (xd[j] - yd[j]); }
   }
 }
 
-static void VLin1VectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VLin1VectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = (a * xd[j]) + yd[j]; }
   }
 }
 
-static void VLin2VectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VLin2VectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y, N_Vector* Z)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
-  sunrealtype* zd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
+  suncomplextype* zd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
-    zd = MYNV_DATA(Z[i]);
+    xd = MYNV_COMPLEX_DATA(X[i]);
+    yd = MYNV_COMPLEX_DATA(Y[i]);
+    zd = MYNV_COMPLEX_DATA(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = (a * xd[j]) - yd[j]; }
   }
 }
 
-static void VaxpyVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
+static void VaxpyVectorArray_Mine(int nvec, suncomplextype a, N_Vector* X,
                                   N_Vector* Y)
 {
   int i;
   sunindextype j, N;
-  sunrealtype* xd = NULL;
-  sunrealtype* yd = NULL;
+  suncomplextype* xd = NULL;
+  suncomplextype* yd = NULL;
 
   N = MYNV_LENGTH(X[0]);
 
-  if (a == ONE)
+  if ((creal(a) == ONE) && (cimag(a) == ZERO))
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
-      yd = MYNV_DATA(Y[i]);
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      yd = MYNV_COMPLEX_DATA(Y[i]);
       for (j = 0; j < N; j++) { yd[j] += xd[j]; }
     }
     return;
   }
 
-  if (a == -ONE)
+  if ((creal(a) == -ONE) && (cimag(a) == ZERO))
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = MYNV_DATA(X[i]);
-      yd = MYNV_DATA(Y[i]);
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      yd = MYNV_COMPLEX_DATA(Y[i]);
       for (j = 0; j < N; j++) { yd[j] -= xd[j]; }
     }
     return;
@@ -1886,8 +2744,8 @@ static void VaxpyVectorArray_Mine(int nvec, sunrealtype a, N_Vector* X,
 
   for (i = 0; i < nvec; i++)
   {
-    xd = MYNV_DATA(X[i]);
-    yd = MYNV_DATA(Y[i]);
+      xd = MYNV_COMPLEX_DATA(X[i]);
+      yd = MYNV_COMPLEX_DATA(Y[i]);
     for (j = 0; j < N; j++) { yd[j] += a * xd[j]; }
   }
 }
@@ -1903,20 +2761,41 @@ SUNErrCode N_VEnableFusedOps_Mine(N_Vector v, sunbooleantype tf)
   if (tf)
   {
     /* enable all fused vector operations */
-    v->ops->nvlinearcombination = N_VLinearCombination_Mine;
-    v->ops->nvscaleaddmulti     = N_VScaleAddMulti_Mine;
-    v->ops->nvdotprodmulti      = N_VDotProdMulti_Mine;
+    // v->ops->nvlinearcombination = N_VLinearCombination_Mine;
+    v->ops->nvlinearcombination = N_VLinearCombination_Real;
+
+    // v->ops->nvscaleaddmulti     = N_VScaleAddMulti_Mine;
+    v->ops->nvscaleaddmulti     = N_VScaleAddMulti_Real;
+    
+    // v->ops->nvdotprodmulti      = N_VDotProdMulti_Mine;
+    v->ops->nvdotprodmulti      = N_VDotProdMulti_Real;
+
+
     /* enable all vector array operations */
-    v->ops->nvlinearsumvectorarray     = N_VLinearSumVectorArray_Mine;
-    v->ops->nvscalevectorarray         = N_VScaleVectorArray_Mine;
-    v->ops->nvconstvectorarray         = N_VConstVectorArray_Mine;
+    // v->ops->nvlinearsumvectorarray     = N_VLinearSumVectorArray_Mine;
+    v->ops->nvlinearsumvectorarray     = N_VLinearSumVectorArray_Real;
+
+    // v->ops->nvscalevectorarray         = N_VScaleVectorArray_Mine;
+    v->ops->nvscalevectorarray         = N_VScaleVectorArray_Real;
+
+
+    // v->ops->nvconstvectorarray         = N_VConstVectorArray_Mine;
+    v->ops->nvconstvectorarray         = N_VConstVectorArray_Real;
+
     v->ops->nvwrmsnormvectorarray      = N_VWrmsNormVectorArray_Mine;
     v->ops->nvwrmsnormmaskvectorarray  = N_VWrmsNormMaskVectorArray_Mine;
-    v->ops->nvscaleaddmultivectorarray = N_VScaleAddMultiVectorArray_Mine;
-    v->ops->nvlinearcombinationvectorarray =
-      N_VLinearCombinationVectorArray_Mine;
+    
+    // v->ops->nvscaleaddmultivectorarray = N_VScaleAddMultiVectorArray_Mine;
+    v->ops->nvscaleaddmultivectorarray = N_VScaleAddMultiVectorArray_Real;
+    
+    // v->ops->nvlinearcombinationvectorarray = N_VLinearCombinationVectorArray_Mine;
+    v->ops->nvlinearcombinationvectorarray = N_VLinearCombinationVectorArray_Real;
+
     /* enable single buffer reduction operations */
-    v->ops->nvdotprodmultilocal = N_VDotProdMulti_Mine;
+    
+    // v->ops->nvdotprodmultilocal = N_VDotProdMulti_Mine;
+    v->ops->nvdotprodmultilocal = N_VDotProdMulti_Real;
+
   }
   else
   {
@@ -1937,70 +2816,5 @@ SUNErrCode N_VEnableFusedOps_Mine(N_Vector v, sunbooleantype tf)
   }
 
   /* return success */
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableLinearCombination_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvlinearcombination = tf ? N_VLinearCombination_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableScaleAddMulti_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvscaleaddmulti = tf ? N_VScaleAddMulti_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableDotProdMulti_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvdotprodmulti      = tf ? N_VDotProdMulti_Mine : NULL;
-  v->ops->nvdotprodmultilocal = tf ? N_VDotProdMulti_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableLinearSumVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvlinearsumvectorarray = tf ? N_VLinearSumVectorArray_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableScaleVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvscalevectorarray = tf ? N_VScaleVectorArray_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableConstVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvconstvectorarray = tf ? N_VConstVectorArray_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableWrmsNormVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvwrmsnormvectorarray = tf ? N_VWrmsNormVectorArray_Mine : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableWrmsNormMaskVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvwrmsnormmaskvectorarray = tf ? N_VWrmsNormMaskVectorArray_Mine
-                                         : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableScaleAddMultiVectorArray_Mine(N_Vector v, sunbooleantype tf)
-{
-  v->ops->nvscaleaddmultivectorarray = tf ? N_VScaleAddMultiVectorArray_Mine
-                                          : NULL;
-  return SUN_SUCCESS;
-}
-
-SUNErrCode N_VEnableLinearCombinationVectorArray_Mine(N_Vector v,
-                                                      sunbooleantype tf)
-{
-  v->ops->nvlinearcombinationvectorarray =
-    tf ? N_VLinearCombinationVectorArray_Mine : NULL;
   return SUN_SUCCESS;
 }
