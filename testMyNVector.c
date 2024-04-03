@@ -41,12 +41,22 @@
 #define NEG_ONE   SUN_RCONST(-1.0)
 #define NEG_TWO   SUN_RCONST(-2.0)
 
+#define SUN_CCONST(x)     x
+
+#define ZEROi         SUN_CCONST(0.0*I)
+#define HALFi         SUN_RCONST(0.5*I)
+#define ONEi          SUN_CCONST(1.0*I)
+#define TWOi          SUN_CCONST(2.0*I)
+#define NEG_HALFi     SUN_RCONST(-0.5*I)
+#define NEG_ONEi      SUN_CCONST(-1.0*I)
+#define NEG_TWOi      SUN_CCONST(-2.0*I)
+
 /* ----------------------------------------------------------------------
  * Implementation specific utility functions for vector tests
  * --------------------------------------------------------------------*/
-int SUNCCompare(suncomplextype a , sunbooleantype b)
+int SUNCCompare(suncomplextype a , suncomplextype b)
 {
-  return (cabs(a - b) > 0) ? (1) : (0);
+  return (cabs(a - b) > 1.0e-16 /* must be modified with precision*/) ? (1) : (0);
 }
 
 int check_ans(suncomplextype ans, N_Vector X, sunindextype local_length)
@@ -144,7 +154,7 @@ int main(int argc, char* argv[])
   }
 
   /* Check vector ID */
-  if (N_VGetVectorID(X) != SUNDIALS_NVEC_CUSTOM)
+  if (N_VGetVectorID_Mine(X) != SUNDIALS_NVEC_CUSTOM)
   {
     printf(">>> FAILED test -- N_VGetVectorID \n");
     printf("    Unrecognized vector type %d \n \n", N_VGetVectorID(X));
@@ -163,6 +173,30 @@ int main(int argc, char* argv[])
     fails += 1;
   }
   else { printf("PASSED test -- N_VGetLength_Mine\n"); }
+
+  /* Check vector length with a fully imaginary complex dot product*/
+  N_VConst_Mine(ONEi, X);
+  sunindextype Xlength3 = (sunindextype)N_VDotProd_Mine(X, X);
+  if (Xlength != Xlength3)
+  {
+    printf(">>> FAILED test -- N_VGetLength_Mine (%li != %li)\n",
+           (long int)Xlength, (long int)Xlength3);
+    fails += 1;
+  }
+  else { printf("PASSED test -- N_VGetLength_Mine\n"); }
+
+
+  /* Check vector length with a complex dot product*/
+  N_VConst_Mine(ONE + ONEi, X);
+  sunindextype Xlength4 = (sunindextype)(N_VDotProd_Mine(X, X)/2.0);
+  if (Xlength != Xlength4)
+  {
+    printf(">>> FAILED test -- N_VGetLength_Mine (%li != %li)\n",
+           (long int)Xlength, (long int)Xlength4);
+    fails += 1;
+  }
+  else { printf("PASSED test -- N_VGetLength_Mine\n"); }
+
 
   /* Test N_VClone_Mine */
   W = N_VClone_Mine(X);
@@ -224,8 +258,8 @@ int main(int argc, char* argv[])
   /* Test N_VConst_Mine: fill vector data with zeros to prevent passing
      in the case where the input vector is a vector of ones */
   set_element_range(X, 0, length - 1, ZERO);
-  N_VConst_Mine(ONE, X);
-  if (check_ans(ONE, X, length))
+  N_VConst_Mine((ONE + TWOi), X);
+  if (check_ans((ONE + TWOi), X, length))
   {
     printf(">>> FAILED test -- N_VConst_Mine \n");
     fails += 1;
@@ -235,10 +269,10 @@ int main(int argc, char* argv[])
   /* Test N_VLinearSum_Mine */
 
   /*   Case 1a: y = x + y, (Vaxpy Case 1) */
-  N_VConst_Mine(ONE, X);
-  N_VConst_Mine(NEG_TWO, Y);
-  N_VLinearSum_Mine(ONE, X, ONE, Y, Y);
-  if (check_ans(NEG_ONE, Y, length))
+  N_VConst_Mine((    ONE + HALFi), X);
+  N_VConst_Mine((NEG_TWO - ONEi), Y);
+  N_VLinearSum_Mine(TWO, X, ONE, Y, Y);
+  if (check_ans(ZERO, Y, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 1a \n");
     fails++;
@@ -246,10 +280,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 1a \n"); }
 
   /*   Case 1b: y = -x + y, (Vaxpy Case 2) */
-  N_VConst_Mine(ONE, X);
-  N_VConst_Mine(TWO, Y);
+  N_VConst_Mine((    ONE + HALFi), X);
+  N_VConst_Mine((NEG_ONE + ONEi), Y);
   N_VLinearSum_Mine(NEG_ONE, X, ONE, Y, Y);
-  if (check_ans(ONE, Y, length))
+  if (check_ans(NEG_TWO + HALFi, Y, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 1b \n");
     fails++;
@@ -257,10 +291,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 1b \n"); }
 
   /*   Case 1c: y = ax + y, (Vaxpy Case 3) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(NEG_TWO, Y);
+  N_VConst_Mine(TWO + TWOi, X);
+  N_VConst_Mine(NEG_TWO - HALFi, Y);
   N_VLinearSum_Mine(HALF, X, ONE, Y, Y);
-  if (check_ans(NEG_ONE, Y, length))
+  if (check_ans(NEG_ONE + HALFi, Y, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 1c \n");
     fails++;
@@ -268,10 +302,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 1c \n"); }
 
   /*   Case 2a: x = x + y, (Vaxpy Case 1) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(NEG_ONE, Y);
+  N_VConst_Mine(TWO + TWOi, X);
+  N_VConst_Mine(NEG_TWO - HALFi, Y);
   N_VLinearSum_Mine(ONE, X, ONE, Y, X);
-  if (check_ans(ONE, X, length))
+  if (check_ans(ONEi + HALFi, X, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 2a \n");
     fails++;
@@ -279,10 +313,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 2a \n"); }
 
   /*   Case 2b: x = x - y, (Vaxpy Case 2)*/
-  N_VConst_Mine(ONE, X);
-  N_VConst_Mine(TWO, Y);
+  N_VConst_Mine(NEG_ONE + TWOi, X);
+  N_VConst_Mine(NEG_TWO + HALFi, Y);
   N_VLinearSum_Mine(ONE, X, NEG_ONE, Y, X);
-  if (check_ans(NEG_ONE, X, length))
+  if (check_ans(ONE + ONEi + HALFi, X, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 2b \n");
     fails++;
@@ -290,10 +324,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 2b \n"); }
 
   /*   Case 2c: x = x + by, (Vaxpy Case 3) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(NEG_HALF, Y);
+  N_VConst_Mine(TWO + TWOi, X);
+  N_VConst_Mine(NEG_HALF + NEG_HALFi, Y);
   N_VLinearSum_Mine(ONE, X, TWO, Y, X);
-  if (check_ans(ONE, X, length))
+  if (check_ans(ONE + ONEi, X, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 2c \n");
     fails++;
@@ -301,11 +335,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 2c \n"); }
 
   /*   Case 3: z = x + y, (VSum) */
-  N_VConst_Mine(NEG_TWO, X);
-  N_VConst_Mine(ONE, Y);
+  N_VConst_Mine(ONE + NEG_TWOi, X);
+  N_VConst_Mine(NEG_ONE + ONEi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(ONE, X, ONE, Y, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(NEG_ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 3 \n");
     fails++;
@@ -313,11 +347,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 3 \n"); }
 
   /*   Case 4a: z = x - y, (VDiff) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(ONE, Y);
+  N_VConst_Mine(ONE + TWOi, X);
+  N_VConst_Mine(NEG_ONE + ONEi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(ONE, X, NEG_ONE, Y, Z);
-  if (check_ans(ONE, Z, length))
+  if (check_ans(TWO + ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 4a \n");
     fails++;
@@ -325,11 +359,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 4a \n"); }
 
   /*   Case 4b: z = -x + y, (VDiff) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(ONE, Y);
+  N_VConst_Mine(ONE + TWOi, X);
+  N_VConst_Mine(HALF + ONEi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(NEG_ONE, X, ONE, Y, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(NEG_HALF + NEG_ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 4b \n");
     fails++;
@@ -337,11 +371,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 4b \n"); }
 
   /*   Case 5a: z = x + by, (VLin1) */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(NEG_HALF, Y);
+  N_VConst_Mine(HALFi, X);
+  N_VConst_Mine(ONE + NEG_HALFi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(ONE, X, TWO, Y, Z);
-  if (check_ans(ONE, Z, length))
+  if (check_ans(TWO + NEG_HALFi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 5a \n");
     fails++;
@@ -349,11 +383,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 5a \n"); }
 
   /*   Case 5b: z = ax + y, (VLin1) */
-  N_VConst_Mine(HALF, X);
-  N_VConst_Mine(NEG_TWO, Y);
+  N_VConst_Mine(ONE + NEG_HALFi, X);
+  N_VConst_Mine(NEG_ONE - NEG_TWOi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(TWO, X, ONE, Y, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(ONE + ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 5b \n");
     fails++;
@@ -361,11 +395,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 5b \n"); }
 
   /*   Case 6a: z = -x + by, (VLin2) */
-  N_VConst_Mine(NEG_TWO, X);
-  N_VConst_Mine(NEG_HALF, Y);
+  N_VConst_Mine(ONE + NEG_HALFi, X);
+  N_VConst_Mine(NEG_ONE + TWOi, Y);
   N_VConst_Mine(ZERO, Z);
-  N_VLinearSum_Mine(NEG_ONE, X, TWO, Y, Z);
-  if (check_ans(ONE, Z, length))
+  N_VLinearSum_Mine(NEG_ONE, X, HALF, Y, Z);
+  if (check_ans(NEG_TWO + HALF + ONEi + HALFi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 6a \n");
     fails++;
@@ -373,11 +407,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 6a \n"); }
 
   /*   Case 6b: z = ax - y, (VLin2) */
-  N_VConst_Mine(HALF, X);
-  N_VConst_Mine(TWO, Y);
+  N_VConst_Mine(ONE + NEG_HALFi, X);
+  N_VConst_Mine(ONE + NEG_TWOi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(TWO, X, NEG_ONE, Y, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(ONE + ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 6b \n");
     fails++;
@@ -385,11 +419,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 6b \n"); }
 
   /*   Case 7: z = a(x + y), (VScaleSum) */
-  N_VConst_Mine(ONE, X);
-  N_VConst_Mine(NEG_HALF, Y);
+  N_VConst_Mine(HALF + ONEi + HALFi, X);
+  N_VConst_Mine(NEG_ONE + NEG_HALFi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(TWO, X, TWO, Y, Z);
-  if (check_ans(ONE, Z, length))
+  if (check_ans(NEG_ONE + TWOi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 7 \n");
     fails++;
@@ -397,11 +431,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 7 \n"); }
 
   /*   Case 8: z = a(x - y), (VScaleDiff) */
-  N_VConst_Mine(HALF, X);
-  N_VConst_Mine(ONE, Y);
+  N_VConst_Mine(ONE + HALF - HALFi, X);
+  N_VConst_Mine(HALF + HALFi, Y);
   N_VConst_Mine(ZERO, Z);
   N_VLinearSum_Mine(TWO, X, NEG_TWO, Y, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(TWO - TWOi, Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 8 \n");
     fails++;
@@ -409,11 +443,11 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VLinearSum_Mine Case 8 \n"); }
 
   /*   Case 9: z = ax + by, All Other Cases */
-  N_VConst_Mine(ONE, X);
-  N_VConst_Mine(NEG_TWO, Y);
+  N_VConst_Mine(ONE + NEG_TWOi, X);
+  N_VConst_Mine(HALF + HALFi, Y);
   N_VConst_Mine(ZERO, Z);
-  N_VLinearSum_Mine(TWO, X, HALF, Y, Z);
-  if (check_ans(ONE, Z, length))
+  N_VLinearSum_Mine(HALF, X, TWO, Y, Z);
+  if (check_ans((ONE + HALF), Z, length))
   {
     printf(">>> FAILED test -- N_VLinearSum_Mine Case 9 \n");
     fails++;
@@ -424,9 +458,9 @@ int main(int argc, char* argv[])
   /* Test N_VScale_Mine */
 
   /*   Case 1: x = cx, VScaleBy */
-  N_VConst_Mine(HALF, X);
+  N_VConst_Mine(HALF + HALFi, X);
   N_VScale_Mine(TWO, X, X);
-  if (check_ans(ONE, X, length))
+  if (check_ans(ONE + ONEi, X, length))
   {
     printf(">>> FAILED test -- N_VScale_Mine Case 1 \n");
     fails++;
@@ -434,10 +468,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VScale_Mine Case 1 \n"); }
 
   /*   Case 2: z = x, VCopy */
-  N_VConst_Mine(NEG_ONE, X);
+  N_VConst_Mine(NEG_ONE + ONEi, X);
   N_VConst_Mine(ZERO, Z);
   N_VScale_Mine(ONE, X, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(NEG_ONE + ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VScale_Mine Case 2\n");
     fails++;
@@ -445,10 +479,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VScale_Mine Case 2 \n"); }
 
   /*   Case 3: z = -x, VNeg */
-  N_VConst_Mine(NEG_ONE, X);
+  N_VConst_Mine(NEG_ONE + ONEi, X);
   N_VConst_Mine(ZERO, Z);
   N_VScale_Mine(NEG_ONE, X, Z);
-  if (check_ans(ONE, Z, length))
+  if (check_ans(ONE + NEG_ONEi, Z, length))
   {
     printf(">>> FAILED test -- N_VScale_Mine Case 3 \n");
     fails++;
@@ -456,10 +490,10 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VScale_Mine Case 3 \n"); }
 
   /*   Case 4: z = cx, All other cases */
-  N_VConst_Mine(NEG_HALF, X);
+  N_VConst_Mine(NEG_HALF + ONEi, X);
   N_VConst_Mine(ZERO, Z);
   N_VScale_Mine(TWO, X, Z);
-  if (check_ans(NEG_ONE, Z, length))
+  if (check_ans(NEG_ONE + TWOi, Z, length))
   {
     printf(">>> FAILED test -- N_VScale_Mine Case 4 \n");
     fails++;
@@ -467,13 +501,13 @@ int main(int argc, char* argv[])
   else { printf("PASSED test -- N_VScale_Mine Case 4 \n"); }
 
   /* Test N_VDotProd_Mine */
-  N_VConst_Mine(TWO, X);
-  N_VConst_Mine(HALF, Y);
+  N_VConst_Mine(TWO - HALFi, X);
+  N_VConst_Mine(ONE + ONEi, Y);
   sunindextype global_length = N_VGetLength_Mine(X);
   sunindextype ans = N_VDotProd_Mine(X, Y);
 
   /* ans should equal global vector length */
-  if (SUNRCompare(ans, (sunrealtype)global_length))
+  if (SUNRCompare(ans, ((suncomplextype)global_length)*(ONE + HALF + NEG_TWOi + NEG_HALFi)))
   {
     printf(">>> FAILED test -- N_VDotProd_Mine \n");
     fails++;

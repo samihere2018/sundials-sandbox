@@ -26,7 +26,7 @@
 #include <arkode/arkode_erkstep.h> /* prototypes for ERKStep fcts., consts */
 #include <math.h>
 #include <complex.h>
-#include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
+#include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */ 
 #include <stdio.h>
 #include <sundials/sundials_math.h>  /* def. of SUNRsqrt, etc. */
 #include <sundials/sundials_types.h> /* def. of type 'sunrealtype' */
