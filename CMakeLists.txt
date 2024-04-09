@@ -18,42 +18,36 @@ find_package(SUNDIALS REQUIRED)
 # https://sundials.readthedocs.io/en/latest/sundials/Install_link.html#using-sundials-as-a-third-party-library-in-other-cmake-projects)
 # as well as the standard math library, "libm".
 
-add_executable(testMyNVector
-  testMyNVector.c
+add_executable(testComplexNVector
+  testComplexNVector.c
   myNVector.c)
-target_link_libraries(testMyNVector PUBLIC
+target_link_libraries(testComplexNVector PUBLIC
   SUNDIALS::core
   m)
 
-add_executable(testMySUNLinearSolver
-  testMySUNLinearSolver.c
+add_executable(testComplexSUNLinearSolver
+  testComplexSUNLinearSolver.c
   mySUNLinearSolver.c
   myNVector.c)
-target_link_libraries(testMySUNLinearSolver PUBLIC
+target_link_libraries(testComplexSUNLinearSolver PUBLIC
   SUNDIALS::core
   m)
 
-add_executable(ark_analytic_nonlin
-  ark_analytic_nonlin.c)
-target_link_libraries(ark_analytic_nonlin PUBLIC
+add_executable(complex_ark_extended
+  complex_ark_extended.c)
+target_link_libraries(complex_ark_extended PUBLIC
   SUNDIALS::arkode
   m)
 
-add_executable(complex_ark
-  complex_ark.c)
-target_link_libraries(complex_ark PUBLIC
+  add_executable(complex_erk_extended
+  complex_erk_extended.c)
+target_link_libraries(complex_erk_extended PUBLIC
   SUNDIALS::arkode
   m)
 
-  add_executable(complex_erk
-  complex_erk.c)
-target_link_libraries(complex_erk PUBLIC
-  SUNDIALS::arkode
-  m)
-
-  add_executable(ark_system_of_ODEs
-  ark_system_of_ODEs.c)
-target_link_libraries(ark_system_of_ODEs PUBLIC
+  add_executable(complex_ark_extended_system
+  complex_ark_extended_system.c)
+target_link_libraries(complex_ark_extended_system PUBLIC
   SUNDIALS::arkode
   m)
 
