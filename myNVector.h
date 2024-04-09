@@ -19,6 +19,7 @@
 #define _MY_NVECTOR_H
 
 #define SUNCabs(x) (cabs((x))) //define for other precisions too!
+#define SUNCsqrt(x) ((creal(csqrt((x)))) <= SUN_RCONST(0.0) ? (-csqrt((x))) : (csqrt((x)))) //returns the sqrt(x) with positive real part
 
 #include <stdio.h>
 #include <complex.h>

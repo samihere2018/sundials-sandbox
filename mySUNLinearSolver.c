@@ -111,25 +111,25 @@ SUNLinearSolver SUNLinSol_Mine(N_Vector y, int pretype, int maxl,
   content->PData     = NULL;
 
   /* Allocate content */
-  content->r_star = N_VClone(y);
+  content->r_star = N_VClone_Mine(y);
   if (content->r_star == NULL) { return NULL; }
-  content->q = N_VClone(y);
+  content->q = N_VClone_Mine(y);
   if (content->q == NULL) { return NULL; }
-  content->d = N_VClone(y);
+  content->d = N_VClone_Mine(y);
   if (content->d == NULL) { return NULL; }
-  content->v = N_VClone(y);
+  content->v = N_VClone_Mine(y);
   if (content->v == NULL) { return NULL; }
-  content->p = N_VClone(y);
+  content->p = N_VClone_Mine(y);
   if (content->p == NULL) { return NULL; }
-  content->r = N_VCloneVectorArray(2, y);
+  content->r = N_VCloneVectorArray(2, y);     // is called in sundials_nvector.h, not myNVector.h
   if (content->r == NULL) { return NULL; }
-  content->u = N_VClone(y);
+  content->u = N_VClone_Mine(y);
   if (content->u == NULL) { return NULL; }
-  content->vtemp1 = N_VClone(y);
+  content->vtemp1 = N_VClone_Mine(y);
   if (content->vtemp1 == NULL) { return NULL; }
-  content->vtemp2 = N_VClone(y);
+  content->vtemp2 = N_VClone_Mine(y);
   if (content->vtemp2 == NULL) { return NULL; }
-  content->vtemp3 = N_VClone(y);
+  content->vtemp3 = N_VClone_Mine(y);
   if (content->vtemp3 == NULL) { return NULL; }
 
   return (S);
@@ -268,8 +268,10 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
                         N_Vector b, sunrealtype delta)
 {
   /* local data and shortcut variables */
-  sunrealtype alpha, tau, eta, beta, c, sigma, v_bar, omega;
-  sunrealtype rho[2];
+  sunrealtype tau, c, v_bar, omega;
+  suncomplextype alpha, beta, eta, sigma;
+  suncomplextype rho[2];
+
   sunrealtype r_init_norm, r_curr_norm;
   sunrealtype temp_val;
   sunbooleantype preOnLeft, preOnRight, scale_x, scale_b, converged, b_ok;
@@ -281,7 +283,7 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
   sunrealtype* res_norm;
   int* nli;
   N_Vector sx, sb, r_star, q, d, v, p, *r, u, vtemp1, vtemp2, vtemp3;
-  sunrealtype cv[3];
+  suncomplextype cv[3];
   N_Vector Xv[3];
   int status = SUN_SUCCESS;
 
@@ -338,7 +340,7 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
 
   /* Set r_star to initial (unscaled) residual r_star = r_0 = b - A*x_0 */
   /* NOTE: if x == 0 then just set residual to b and continue */
-  if (*zeroguess) { N_VScale(ONE, b, r_star); }
+  if (*zeroguess) { N_VScale_Mine(ONE, b, r_star); }
   else
   {
     status = atimes(A_data, x, r_star);
@@ -349,13 +351,14 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
                                  : SUNLS_ATIMES_FAIL_REC;
       return (LASTFLAG(S));
     }
-    N_VLinearSum(ONE, b, -ONE, r_star, r_star);
+    N_VLinearSum_Mine(ONE, b, -ONE, r_star, r_star);
   }
 
   /* Apply left preconditioner and b-scaling to r_star (or really just r_0) */
   if (preOnLeft)
   {
     status = psolve(P_data, r_star, vtemp1, delta, SUN_PREC_LEFT);
+
     if (status != 0)
     {
       *zeroguess  = SUNFALSE;
@@ -364,20 +367,20 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
       return (LASTFLAG(S));
     }
   }
-  else { N_VScale(ONE, r_star, vtemp1); }
+  else { N_VScale_Mine(ONE, r_star, vtemp1); }
 
-  if (scale_b) { N_VProd(sb, vtemp1, r_star); }
-  else { N_VScale(ONE, vtemp1, r_star); }
+  if (scale_b) { N_VProd_Mine(sb, vtemp1, r_star); }
+  else { N_VScale_Mine(ONE, vtemp1, r_star); }
 
   /* Initialize rho[0] */
   /* NOTE: initialized here to reduce number of computations - avoid need
            to compute r_star^T*r_star twice, and avoid needlessly squaring
            values */
-  rho[0] = N_VDotProd(r_star, r_star);
+  rho[0] = N_VDotProd_Mine(r_star, r_star);
 
   /* Compute norm of initial residual (r_0) to see if we really need
      to do anything */
-  *res_norm = r_init_norm = SUNRsqrt(rho[0]);
+  *res_norm = r_init_norm = (sunrealtype)SUNCsqrt(rho[0]);
 
   if (r_init_norm <= delta)
   {
@@ -387,12 +390,12 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
   }
 
   /* Set v = A*r_0 (preconditioned and scaled) */
-  if (scale_x) { N_VDiv(r_star, sx, vtemp1); }
-  else { N_VScale(ONE, r_star, vtemp1); }
+  if (scale_x) { N_VDiv_Mine(r_star, sx, vtemp1); }
+  else { N_VScale_Mine(ONE, r_star, vtemp1); }
 
   if (preOnRight)
   {
-    N_VScale(ONE, vtemp1, v);
+    N_VScale_Mine(ONE, vtemp1, v);
     status = psolve(P_data, v, vtemp1, delta, SUN_PREC_RIGHT);
     if (status != 0)
     {
@@ -422,19 +425,19 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
       return (LASTFLAG(S));
     }
   }
-  else { N_VScale(ONE, v, vtemp1); }
+  else { N_VScale_Mine(ONE, v, vtemp1); }
 
-  if (scale_b) { N_VProd(sb, vtemp1, v); }
-  else { N_VScale(ONE, vtemp1, v); }
+  if (scale_b) { N_VProd_Mine(sb, vtemp1, v); }
+  else { N_VScale_Mine(ONE, vtemp1, v); }
 
   /* Initialize remaining variables */
-  N_VScale(ONE, r_star, r[0]);
-  N_VScale(ONE, r_star, u);
-  N_VScale(ONE, r_star, p);
-  N_VConst(ZERO, d);
+  N_VScale_Mine(ONE, r_star, r[0]);
+  N_VScale_Mine(ONE, r_star, u);
+  N_VScale_Mine(ONE, r_star, p);
+  N_VConst_Mine(ZERO, d);
 
   /* Set x = sx x if non-zero guess */
-  if (scale_x && !(*zeroguess)) { N_VProd(sx, x, x); }
+  if (scale_x && !(*zeroguess)) { N_VProd_Mine(sx, x, x); }
 
   tau   = r_init_norm;
   v_bar = eta = ZERO;
@@ -446,21 +449,21 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
     (*nli)++;
 
     /* sigma = r_star^T*v */
-    sigma = N_VDotProd(r_star, v);
+    sigma = N_VDotProd_Mine(v, r_star);
 
     /* alpha = rho[0]/sigma */
     alpha = rho[0] / sigma;
 
     /* q = u-alpha*v */
-    N_VLinearSum(ONE, u, -alpha, v, q);
+    N_VLinearSum_Mine(ONE, u, -alpha, v, q);
 
     /* r[1] = r[0]-alpha*A*(u+q) */
-    N_VLinearSum(ONE, u, ONE, q, r[1]);
-    if (scale_x) { N_VDiv(r[1], sx, r[1]); }
+    N_VLinearSum_Mine(ONE, u, ONE, q, r[1]);
+    if (scale_x) { N_VDiv_Mine(r[1], sx, r[1]); }
 
     if (preOnRight)
     {
-      N_VScale(ONE, r[1], vtemp1);
+      N_VScale_Mine(ONE, r[1], vtemp1);
       status = psolve(P_data, vtemp1, r[1], delta, SUN_PREC_RIGHT);
       if (status != 0)
       {
@@ -491,11 +494,11 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
         return (LASTFLAG(S));
       }
     }
-    else { N_VScale(ONE, vtemp1, r[1]); }
+    else { N_VScale_Mine(ONE, vtemp1, r[1]); }
 
-    if (scale_b) { N_VProd(sb, r[1], vtemp1); }
-    else { N_VScale(ONE, r[1], vtemp1); }
-    N_VLinearSum(ONE, r[0], -alpha, vtemp1, r[1]);
+    if (scale_b) { N_VProd_Mine(sb, r[1], vtemp1); }
+    else { N_VScale_Mine(ONE, r[1], vtemp1); }
+    N_VLinearSum_Mine(ONE, r[0], -alpha, vtemp1, r[1]);
 
     /* START inner loop */
     for (m = 0; m < 2; ++m)
@@ -508,16 +511,16 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
        */
       if (m == 0)
       {
-        temp_val = N_VDotProd(r[1], r[1]);
+        temp_val = (sunrealtype)N_VDotProd_Mine(r[1], r[1]);
         temp_val = SUNRsqrt(temp_val);
-        omega    = N_VDotProd(r[0], r[0]);
+        omega    = N_VDotProd_Mine(r[0], r[0]);
         omega = SUNRsqrt(SUNRsqrt(omega) * temp_val);
-        N_VLinearSum(ONE, u, SUNSQR(v_bar) * eta / alpha, d, d);
+        N_VLinearSum_Mine(ONE, u, SUNSQR(v_bar) * eta / alpha, d, d);
       }
       else
       {
         omega = temp_val;
-        N_VLinearSum(ONE, q, SUNSQR(v_bar) * eta / alpha, d, d);
+        N_VLinearSum_Mine(ONE, q, SUNSQR(v_bar) * eta / alpha, d, d);
       }
 
       /* v_bar = omega/tau */
@@ -533,8 +536,8 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
       eta = SUNSQR(c) * alpha;
 
       /* x = x+eta*d */
-      if (n == 0 && m == 0 && *zeroguess) { N_VScale(eta, d, x); }
-      else { N_VLinearSum(ONE, x, eta, d, x); }
+      if (n == 0 && m == 0 && *zeroguess) { N_VScale_Mine(eta, d, x); }
+      else { N_VLinearSum_Mine(ONE, x, eta, d, x); }
 
       /* Check for convergence... */
       /* NOTE: just use approximation to norm of residual, if possible */
@@ -564,8 +567,8 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
           (r_curr_norm >= r_init_norm && m == 1 && n == l_max))
       {
         /* Compute norm of residual ||b-A*x||_2 (preconditioned and scaled) */
-        if (scale_x) { N_VDiv(x, sx, vtemp1); }
-        else { N_VScale(ONE, x, vtemp1); }
+        if (scale_x) { N_VDiv_Mine(x, sx, vtemp1); }
+        else { N_VScale_Mine(ONE, x, vtemp1); }
 
         if (preOnRight)
         {
@@ -577,7 +580,7 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
                                        : SUNLS_PSOLVE_FAIL_UNREC;
             return (LASTFLAG(S));
           }
-          N_VScale(ONE, vtemp2, vtemp1);
+          N_VScale_Mine(ONE, vtemp2, vtemp1);
         }
 
         status = atimes(A_data, vtemp1, vtemp2);
@@ -600,10 +603,10 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
             return (LASTFLAG(S));
           }
         }
-        else { N_VScale(ONE, vtemp2, vtemp1); }
+        else { N_VScale_Mine(ONE, vtemp2, vtemp1); }
 
-        if (scale_b) { N_VProd(sb, vtemp1, vtemp2); }
-        else { N_VScale(ONE, vtemp1, vtemp2); }
+        if (scale_b) { N_VProd_Mine(sb, vtemp1, vtemp2); }
+        else { N_VScale_Mine(ONE, vtemp1, vtemp2); }
 
         /* Only precondition and scale b once (result saved for reuse) */
         if (!b_ok)
@@ -620,12 +623,12 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
               return (LASTFLAG(S));
             }
           }
-          else { N_VScale(ONE, b, vtemp3); }
+          else { N_VScale_Mine(ONE, b, vtemp3); }
 
-          if (scale_b) { N_VProd(sb, vtemp3, vtemp3); }
+          if (scale_b) { N_VProd_Mine(sb, vtemp3, vtemp3); }
         }
-        N_VLinearSum(ONE, vtemp3, -ONE, vtemp2, vtemp1);
-        r_curr_norm = N_VDotProd(vtemp1, vtemp1);
+        N_VLinearSum_Mine(ONE, vtemp3, -ONE, vtemp2, vtemp1);
+        r_curr_norm = (sunrealtype)N_VDotProd_Mine(vtemp1, vtemp1);
         *res_norm = r_curr_norm = SUNRsqrt(r_curr_norm);
 
         /* Exit inner loop if inequality condition is satisfied
@@ -643,13 +646,13 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
     if (converged == SUNTRUE) { break; }
 
     /* rho[1] = r_star^T*r_[1] */
-    rho[1] = N_VDotProd(r_star, r[1]);
+    rho[1] = N_VDotProd_Mine(r[1], r_star);
 
     /* beta = rho[1]/rho[0] */
     beta = rho[1] / rho[0];
 
     /* u = r[1]+beta*q */
-    N_VLinearSum(ONE, r[1], beta, q, u);
+    N_VLinearSum_Mine(ONE, r[1], beta, q, u);
 
     /* p = u+beta*(q+beta*p) = beta*beta*p + beta*q + u */
     cv[0] = SUNSQR(beta);
@@ -661,15 +664,15 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
     cv[2] = ONE;
     Xv[2] = u;
 
-    N_VLinearCombination(3, cv, Xv, p);
+    N_VLinearCombination_Mine(3, cv, Xv, p);
 
     /* v = A*p */
-    if (scale_x) { N_VDiv(p, sx, vtemp1); }
-    else { N_VScale(ONE, p, vtemp1); }
+    if (scale_x) { N_VDiv_Mine(p, sx, vtemp1); }
+    else { N_VScale_Mine(ONE, p, vtemp1); }
 
     if (preOnRight)
     {
-      N_VScale(ONE, vtemp1, v);
+      N_VScale_Mine(ONE, vtemp1, v);
       status = psolve(P_data, v, vtemp1, delta, SUN_PREC_RIGHT);
       if (status != 0)
       {
@@ -700,14 +703,14 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
         return (LASTFLAG(S));
       }
     }
-    else { N_VScale(ONE, v, vtemp1); }
+    else { N_VScale_Mine(ONE, v, vtemp1); }
 
-    if (scale_b) { N_VProd(sb, vtemp1, v); }
-    else { N_VScale(ONE, vtemp1, v); }
+    if (scale_b) { N_VProd_Mine(sb, vtemp1, v); }
+    else { N_VScale_Mine(ONE, vtemp1, v); }
 
     /* Shift variable values */
     /* NOTE: reduces storage requirements */
-    N_VScale(ONE, r[1], r[0]);
+    N_VScale_Mine(ONE, r[1], r[0]);
     rho[0] = rho[1];
 
   } /* END outer loop */
@@ -717,7 +720,7 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
    * (x) */
   if ((converged == SUNTRUE) || (r_curr_norm < r_init_norm))
   {
-    if (scale_x) { N_VDiv(x, sx, x); }
+    if (scale_x) { N_VDiv_Mine(x, sx, x); }
 
     if (preOnRight)
     {
@@ -729,7 +732,7 @@ int SUNLinSolSolve_Mine(SUNLinearSolver S, SUNMatrix A, N_Vector x,
                                    : SUNLS_PSOLVE_FAIL_UNREC;
         return (LASTFLAG(S));
       }
-      N_VScale(ONE, vtemp1, x);
+      N_VScale_Mine(ONE, vtemp1, x);
     }
 
     *zeroguess = SUNFALSE;
@@ -771,7 +774,7 @@ SUNErrCode SUNLinSolSpace_Mine(SUNLinearSolver S, long int* lenrwLS,
   sunindextype liw1, lrw1;
   if (MY_CONTENT(S)->vtemp1->ops->nvspace)
   {
-    N_VSpace(MY_CONTENT(S)->vtemp1, &lrw1, &liw1);
+    N_VSpace_Mine(MY_CONTENT(S)->vtemp1, &lrw1, &liw1);
   }
   else { lrw1 = liw1 = 0; }
   *lenrwLS = lrw1 * 11;
@@ -788,27 +791,27 @@ SUNErrCode SUNLinSolFree_Mine(SUNLinearSolver S)
     /* delete items from within the content structure */
     if (MY_CONTENT(S)->r_star)
     {
-      N_VDestroy(MY_CONTENT(S)->r_star);
+      N_VDestroy_Mine(MY_CONTENT(S)->r_star);
       MY_CONTENT(S)->r_star = NULL;
     }
     if (MY_CONTENT(S)->q)
     {
-      N_VDestroy(MY_CONTENT(S)->q);
+      N_VDestroy_Mine(MY_CONTENT(S)->q);
       MY_CONTENT(S)->q = NULL;
     }
     if (MY_CONTENT(S)->d)
     {
-      N_VDestroy(MY_CONTENT(S)->d);
+      N_VDestroy_Mine(MY_CONTENT(S)->d);
       MY_CONTENT(S)->d = NULL;
     }
     if (MY_CONTENT(S)->v)
     {
-      N_VDestroy(MY_CONTENT(S)->v);
+      N_VDestroy_Mine(MY_CONTENT(S)->v);
       MY_CONTENT(S)->v = NULL;
     }
     if (MY_CONTENT(S)->p)
     {
-      N_VDestroy(MY_CONTENT(S)->p);
+      N_VDestroy_Mine(MY_CONTENT(S)->p);
       MY_CONTENT(S)->p = NULL;
     }
     if (MY_CONTENT(S)->r)
@@ -818,22 +821,22 @@ SUNErrCode SUNLinSolFree_Mine(SUNLinearSolver S)
     }
     if (MY_CONTENT(S)->u)
     {
-      N_VDestroy(MY_CONTENT(S)->u);
+      N_VDestroy_Mine(MY_CONTENT(S)->u);
       MY_CONTENT(S)->u = NULL;
     }
     if (MY_CONTENT(S)->vtemp1)
     {
-      N_VDestroy(MY_CONTENT(S)->vtemp1);
+      N_VDestroy_Mine(MY_CONTENT(S)->vtemp1);
       MY_CONTENT(S)->vtemp1 = NULL;
     }
     if (MY_CONTENT(S)->vtemp2)
     {
-      N_VDestroy(MY_CONTENT(S)->vtemp2);
+      N_VDestroy_Mine(MY_CONTENT(S)->vtemp2);
       MY_CONTENT(S)->vtemp2 = NULL;
     }
     if (MY_CONTENT(S)->vtemp3)
     {
-      N_VDestroy(MY_CONTENT(S)->vtemp3);
+      N_VDestroy_Mine(MY_CONTENT(S)->vtemp3);
       MY_CONTENT(S)->vtemp3 = NULL;
     }
     free(S->content);

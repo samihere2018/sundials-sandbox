@@ -56,3 +56,10 @@ target_link_libraries(complex_erk PUBLIC
 target_link_libraries(ark_system_of_ODEs PUBLIC
   SUNDIALS::arkode
   m)
+
+  add_executable(complex_erk_myNVector
+  complex_erk_myNVector.c
+  myNVector.c)
+target_link_libraries(complex_erk_myNVector PUBLIC
+  SUNDIALS::arkode
+  m)
