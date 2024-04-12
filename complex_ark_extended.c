@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
-#include "myNVector.h"
+#include "nvector_serialcomplex.h"
 #include <arkode/arkode_arkstep.h>         /* prototypes for ARKStep fcts., consts */
 #include <nvector/nvector_serial.h>        /* serial N_Vector types, fcts., macros */
 #include <sunmatrix/sunmatrix_dense.h>     /* access to dense SUNMatrix            */

@@ -20,8 +20,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "myNVector.h"
-#include "mySUNLinearSolver.h"
+#include "nvector_serialcomplex.h"
+#include "sunlinsol_sptfqmrcomplex.h"
 
 
 #if defined(SUNDIALS_EXTENDED_PRECISION)

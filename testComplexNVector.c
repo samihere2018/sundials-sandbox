@@ -17,7 +17,7 @@
  * -----------------------------------------------------------------*/
 
 #include <sundials/sundials_config.h>
-#include "myNVector.h"
+#include "nvector_serialcomplex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sundials/sundials_math.h>

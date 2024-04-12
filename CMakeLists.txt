@@ -20,15 +20,15 @@ find_package(SUNDIALS REQUIRED)
 
 add_executable(testComplexNVector
   testComplexNVector.c
-  myNVector.c)
+  nvector_serialcomplex.c)
 target_link_libraries(testComplexNVector PUBLIC
   SUNDIALS::core
   m)
 
 add_executable(testComplexSUNLinearSolver
   testComplexSUNLinearSolver.c
-  mySUNLinearSolver.c
-  myNVector.c)
+  sunlinsol_sptfqmrcomplex.c
+  nvector_serialcomplex.c)
 target_link_libraries(testComplexSUNLinearSolver PUBLIC
   SUNDIALS::core
   m)
@@ -53,7 +53,7 @@ target_link_libraries(complex_ark_extended_system PUBLIC
 
   add_executable(complex_erk_myNVector
   complex_erk_myNVector.c
-  myNVector.c)
+  nvector_serialcomplex.c)
 target_link_libraries(complex_erk_myNVector PUBLIC
   SUNDIALS::arkode
   m)
