@@ -40,7 +40,7 @@
 #define FIVE     SUN_RCONST(5.0)
 #define THOUSAND SUN_RCONST(1000.0)
 
-#define SOMECOMPLEXNUMBER  (7.0 + 5.0*I)
+#define SOMECOMPLEXNUMBER  (2.0 + 5.0*I)
 
 /* user data structure */
 typedef struct
