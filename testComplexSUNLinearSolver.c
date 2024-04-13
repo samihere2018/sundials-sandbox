@@ -153,31 +153,31 @@ int main(int argc, char* argv[])
   printf("  Solver Tolerance = %g\n", tol);
 
   /* Create vectors */
-  x = N_VNew_Mine(ProbData.N, sunctx);
-  if (check_flag(x, "N_VNew_Mine", 0)) { return 1; }
-  xhat = N_VClone_Mine(x);
-  if (check_flag(xhat, "N_VClone_Mine", 0)) { return 1; }
-  b = N_VClone_Mine(x);
-  if (check_flag(b, "N_VClone_Mine", 0)) { return 1; }
-  ProbData.d = N_VClone_Mine(x);
-  if (check_flag(ProbData.d, "N_VClone_Mine", 0)) { return 1; }
-  ProbData.s1 = N_VClone_Mine(x);
-  if (check_flag(ProbData.s1, "N_VClone_Mine", 0)) { return 1; }
-  ProbData.s2 = N_VClone_Mine(x);
-  if (check_flag(ProbData.s2, "N_VClone_Mine", 0)) { return 1; }
+  x = N_VNew_SComplex(ProbData.N, sunctx);
+  if (check_flag(x, "N_VNew_SComplex", 0)) { return 1; }
+  xhat = N_VClone_SComplex(x);
+  if (check_flag(xhat, "N_VClone_SComplex", 0)) { return 1; }
+  b = N_VClone_SComplex(x);
+  if (check_flag(b, "N_VClone_SComplex", 0)) { return 1; }
+  ProbData.d = N_VClone_SComplex(x);
+  if (check_flag(ProbData.d, "N_VClone_SComplex", 0)) { return 1; }
+  ProbData.s1 = N_VClone_SComplex(x);
+  if (check_flag(ProbData.s1, "N_VClone_SComplex", 0)) { return 1; }
+  ProbData.s2 = N_VClone_SComplex(x);
+  if (check_flag(ProbData.s2, "N_VClone_SComplex", 0)) { return 1; }
 
   /* Fill xhat vector with uniform random data in [1,2] */
-  vecdata = N_VGetArrayPointer_Mine(xhat);
+  vecdata = N_VGetArrayPointer_SComplex(xhat);
   for (i = 0; i < ProbData.N; i++) { vecdata[i] = 1.0 + (suncomplextype)i /*urand()*/; }
 
   /* Fill Jacobi vector with matrix diagonal */
-  N_VConst_Mine(SOMECOMPLEXNUMBER, ProbData.d);
+  N_VConst_SComplex(SOMECOMPLEXNUMBER, ProbData.d);
 
   /* Create Custom linear solver */
-  LS = SUNLinSol_Mine(x, pretype, maxl, sunctx);
+  LS = SUNLinSol_SComplex(x, pretype, maxl, sunctx);
 
   /* Test GetType */
-  if (SUNLinSolGetType_Mine(LS) != SUNLINEARSOLVER_ITERATIVE)
+  if (SUNLinSolGetType_SComplex(LS) != SUNLINEARSOLVER_ITERATIVE)
   {
     printf(">>> FAILED test -- SUNLinSolGetType \n");
     fails++;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
   else { printf("    PASSED test -- SUNLinSolGetType \n");}
 
   /* Test GetID */
-  if (SUNLinSolGetID_Mine(LS) != SUNLINEARSOLVER_CUSTOM)
+  if (SUNLinSolGetID_SComplex(LS) != SUNLINEARSOLVER_CUSTOM)
   {
     printf(">>> FAILED test -- SUNLinSolGetID \n");
     fails++;
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
   else { printf("    PASSED test -- SUNLinSolGetID \n"); }
 
   /* Test SetATimes */
-  failure = SUNLinSolSetATimes_Mine(LS, &ProbData, ATimes);
+  failure = SUNLinSolSetATimes_SComplex(LS, &ProbData, ATimes);
   if (failure)
   {
     printf(">>> FAILED test -- SUNLinSolSetATimes returned %d \n", failure);
@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
   else { printf("    PASSED test -- SUNLinSolSetATimes \n"); }
 
   /* Test SetPreconditioner */
-  failure = SUNLinSolSetPreconditioner_Mine(LS, &ProbData, PSetup, PSolve);
+  failure = SUNLinSolSetPreconditioner_SComplex(LS, &ProbData, PSetup, PSolve);
   if (failure)
   {
     printf(">>> FAILED test -- SUNLinSolSetPreconditioner returned %d \n", failure);
@@ -211,7 +211,7 @@ int main(int argc, char* argv[])
   else { printf("    PASSED test -- SUNLinSolSetPreconditioner \n"); }
 
   /* Test SetScalingVectors */
-  failure = SUNLinSolSetScalingVectors_Mine(LS, ProbData.s1, ProbData.s2);
+  failure = SUNLinSolSetScalingVectors_SComplex(LS, ProbData.s1, ProbData.s2);
   if (failure)
   {
     printf(">>> FAILED test -- SUNLinSolSetScalingVectors returned %d \n", failure);
@@ -220,111 +220,111 @@ int main(int argc, char* argv[])
   else { printf("    PASSED test -- SUNLinSolSetScalingVectors \n"); }
 
   /* Test SetZeroGuess */
-  failure = SUNLinSolSetZeroGuess_Mine(LS, SUNTRUE);
+  failure = SUNLinSolSetZeroGuess_SComplex(LS, SUNTRUE);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_Mine returned %d \n", failure);
+    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_SComplex returned %d \n", failure);
     fails++;
   }
-  else { printf("    PASSED test -- SUNLinSolSetZeroGuess_Mine \n"); }
+  else { printf("    PASSED test -- SUNLinSolSetZeroGuess_SComplex \n"); }
 
-  failure = SUNLinSolSetZeroGuess_Mine(LS, SUNFALSE);
+  failure = SUNLinSolSetZeroGuess_SComplex(LS, SUNFALSE);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_Mine returned %d \n", failure);
+    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_SComplex returned %d \n", failure);
     fails++;
   }
-  else { printf("    PASSED test -- SUNLinSolSetZeroGuess_Mine \n"); }
+  else { printf("    PASSED test -- SUNLinSolSetZeroGuess_SComplex \n"); }
 
   /* Test Initialize */
-  if (SUNLinSolInitialize_Mine(LS))
+  if (SUNLinSolInitialize_SComplex(LS))
   { 
-    printf(">>> FAILED test -- SUNLinSolInitialize_Mine check \n");
+    printf(">>> FAILED test -- SUNLinSolInitialize_SComplex check \n");
     fails++;
   }
-  else { printf("    PASSED test -- SUNLinSolInitialize_Mine \n"); }
+  else { printf("    PASSED test -- SUNLinSolInitialize_SComplex \n"); }
 
 
   /*** Poisson-like solve w/ scaled rows (Jacobi preconditioning) ***/
 
   /* set scaling vectors */
-  vecdata = N_VGetArrayPointer_Mine(ProbData.s1);
+  vecdata = N_VGetArrayPointer_SComplex(ProbData.s1);
   for (i = 0; i < ProbData.N; i++) { vecdata[i] = ONE + THOUSAND * urand(); }
 
-  vecdata = N_VGetArrayPointer_Mine(ProbData.s2);
+  vecdata = N_VGetArrayPointer_SComplex(ProbData.s2);
   for (i = 0; i < ProbData.N; i++) { vecdata[i] = FIVE + THOUSAND * urand(); }
 
   /* Fill x vector with scaled version */
-  N_VDiv_Mine(xhat, ProbData.s2, x);
+  N_VDiv_SComplex(xhat, ProbData.s2, x);
 
   /* Fill b vector with result of matrix-vector product */
   fails = ATimes(&ProbData, x, b);
   if (check_flag(&fails, "ATimes", 1)) { return 1; }
 
   /* Run tests with this setup */
-  failure = SUNLinSolSetPrecType_Mine(LS, pretype);
-  if (failure) { printf(">>> FAILED test -- SUNLinSolSetPrecType_Mine check \n"); }
+  failure = SUNLinSolSetPrecType_SComplex(LS, pretype);
+  if (failure) { printf(">>> FAILED test -- SUNLinSolSetPrecType_SComplex check \n"); }
   else { printf("    PASSED test -- SUNLinSol_SetPrecType \n"); }
 
-  failure = SUNLinSolSetup_Mine(LS, A);
+  failure = SUNLinSolSetup_SComplex(LS, A);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSetup_Mine check \n");
+    printf(">>> FAILED test -- SUNLinSolSetup_SComplex check \n");
     return (1);
   }
-  else { printf("    PASSED test -- SUNLinSolSetup_Mine \n"); }
+  else { printf("    PASSED test -- SUNLinSolSetup_SComplex \n"); }
 
-  N_Vector y = N_VClone_Mine(x);
-  N_VConst_Mine(ZERO, y);
-  failure = SUNLinSolSetZeroGuess_Mine(LS, SUNTRUE);
+  N_Vector y = N_VClone_SComplex(x);
+  N_VConst_SComplex(ZERO, y);
+  failure = SUNLinSolSetZeroGuess_SComplex(LS, SUNTRUE);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_Mine returned %d \n", failure);
-    N_VDestroy_Mine(y);
+    printf(">>> FAILED test -- SUNLinSolSetZeroGuess_SComplex returned %d \n", failure);
+    N_VDestroy_SComplex(y);
     return (1);
   }
 
-  failure = SUNLinSolSolve_Mine(LS, A, y, b, tol);
+  failure = SUNLinSolSolve_SComplex(LS, A, y, b, tol);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSolve_Mine returned %d \n", failure);
-    N_VDestroy_Mine(y);
+    printf(">>> FAILED test -- SUNLinSolSolve_SComplex returned %d \n", failure);
+    N_VDestroy_SComplex(y);
     return (1);
   }
 
   failure = check_vector(x, y, 10.0 * tol);
   if (failure)
   {
-    printf(">>> FAILED test -- SUNLinSolSolve_Mine check \n");
-    N_VDestroy_Mine(y);
+    printf(">>> FAILED test -- SUNLinSolSolve_SComplex check \n");
+    N_VDestroy_SComplex(y);
     return (1);
   }
   else
-  { printf("    PASSED test -- SUNLinSolSolve_Mine \n"); }
-  N_VDestroy_Mine(y);
+  { printf("    PASSED test -- SUNLinSolSolve_SComplex \n"); }
+  N_VDestroy_SComplex(y);
 
-  sunindextype lastflag = SUNLinSolLastFlag_Mine(LS);
-  printf("    PASSED test -- SUNLinSolLastFlag_Mine (%ld) \n", (long int)lastflag);
+  sunindextype lastflag = SUNLinSolLastFlag_SComplex(LS);
+  printf("    PASSED test -- SUNLinSolLastFlag_SComplex (%ld) \n", (long int)lastflag);
 
 
-  int numiters = SUNLinSolNumIters_Mine(LS);
-  printf("    PASSED test -- SUNLinSolNumIters_Mine (%d) \n", numiters);
+  int numiters = SUNLinSolNumIters_SComplex(LS);
+  printf("    PASSED test -- SUNLinSolNumIters_SComplex (%d) \n", numiters);
 
-  double resnorm = (double) SUNLinSolResNorm_Mine(LS);
+  double resnorm = (double) SUNLinSolResNorm_SComplex(LS);
   if (resnorm < ZERO)
   {
-    printf(">>> FAILED test -- SUNLinSolResNorm_Mine returned %g \n", resnorm);
+    printf(">>> FAILED test -- SUNLinSolResNorm_SComplex returned %g \n", resnorm);
     return (1);
   }
-  else { printf("    PASSED test -- SUNLinSolResNorm_Mine\n"); }
+  else { printf("    PASSED test -- SUNLinSolResNorm_SComplex\n"); }
 
-  N_Vector resid = SUNLinSolResid_Mine(LS);
+  N_Vector resid = SUNLinSolResid_SComplex(LS);
   if (resid == NULL)
   {
-    printf(">>> FAILED test -- SUNLinSolResid_Mine returned NULL N_Vector \n");
+    printf(">>> FAILED test -- SUNLinSolResid_SComplex returned NULL N_Vector \n");
     return (1);
   }
-  else { printf("    PASSED test -- SUNLinSolResid_Mine\n"); }
+  else { printf("    PASSED test -- SUNLinSolResid_SComplex\n"); }
 
   /* Print result */
   if (fails)
@@ -335,13 +335,13 @@ int main(int argc, char* argv[])
   else { printf("SUCCESS: MySUNLinSol module, passed all tests\n\n"); }
 
   /* Free solver and vectors */
-  SUNLinSolFree_Mine(LS);
-  N_VDestroy_Mine(x);
-  N_VDestroy_Mine(xhat);
-  N_VDestroy_Mine(b);
-  N_VDestroy_Mine(ProbData.d);
-  N_VDestroy_Mine(ProbData.s1);
-  N_VDestroy_Mine(ProbData.s2);
+  SUNLinSolFree_SComplex(LS);
+  N_VDestroy_SComplex(x);
+  N_VDestroy_SComplex(xhat);
+  N_VDestroy_SComplex(b);
+  N_VDestroy_SComplex(ProbData.d);
+  N_VDestroy_SComplex(ProbData.s1);
+  N_VDestroy_SComplex(ProbData.s2);
   SUNContext_Free(&sunctx);
 
   return (passfail);
@@ -361,14 +361,14 @@ int ATimes(void* Data, N_Vector v_vec, N_Vector z_vec)
 
   /* access user data structure and vector data */
   ProbData = (UserData*)Data;
-  v        = N_VGetArrayPointer_Mine(v_vec);
-  if (check_flag(v, "N_VGetArrayPointer_Mine", 0)) { return 1; }
-  z = N_VGetArrayPointer_Mine(z_vec);
-  if (check_flag(z, "N_VGetArrayPointer_Mine", 0)) { return 1; }
-  s1 = N_VGetArrayPointer_Mine(ProbData->s1);
-  if (check_flag(s1, "N_VGetArrayPointer_Mine", 0)) { return 1; }
-  s2 = N_VGetArrayPointer_Mine(ProbData->s2);
-  if (check_flag(s2, "N_VGetArrayPointer_Mine", 0)) { return 1; }
+  v        = N_VGetArrayPointer_SComplex(v_vec);
+  if (check_flag(v, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
+  z = N_VGetArrayPointer_SComplex(z_vec);
+  if (check_flag(z, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
+  s1 = N_VGetArrayPointer_SComplex(ProbData->s1);
+  if (check_flag(s1, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
+  s2 = N_VGetArrayPointer_SComplex(ProbData->s2);
+  if (check_flag(s2, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
   N = ProbData->N;
 
   /* perform product at the left domain boundary (note: v is zero at the boundary)*/
@@ -401,12 +401,12 @@ int PSolve(void* Data, N_Vector r_vec, N_Vector z_vec, sunrealtype tol, int lr)
 
   /* access user data structure and vector data */
   ProbData = (UserData*)Data;
-  r        = N_VGetArrayPointer_Mine(r_vec);
-  if (check_flag(r, "N_VGetArrayPointer_Mine", 0)) { return 1; }
-  z = N_VGetArrayPointer_Mine(z_vec);
-  if (check_flag(z, "N_VGetArrayPointer_Mine", 0)) { return 1; }
-  d = N_VGetArrayPointer_Mine(ProbData->d);
-  if (check_flag(d, "N_VGetArrayPointer_Mine", 0)) { return 1; }
+  r        = N_VGetArrayPointer_SComplex(r_vec);
+  if (check_flag(r, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
+  z = N_VGetArrayPointer_SComplex(z_vec);
+  if (check_flag(z, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
+  d = N_VGetArrayPointer_SComplex(ProbData->d);
+  if (check_flag(d, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
 
   /* iterate through domain, performing Jacobi solve */
   for (i = 0; i < ProbData->N; i++) { z[i] = r[i] / d[i]; }
@@ -465,8 +465,8 @@ int check_vector(N_Vector X, N_Vector Y, sunrealtype tol)
   suncomplextype *Xdata, *Ydata;
   sunrealtype maxerr;
 
-  Xdata = N_VGetArrayPointer_Mine(X);
-  Ydata = N_VGetArrayPointer_Mine(Y);
+  Xdata = N_VGetArrayPointer_SComplex(X);
+  Ydata = N_VGetArrayPointer_SComplex(Y);
 
   /* check vector data */
   for (i = 0; i < problem_size; i++)
