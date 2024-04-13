@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds @ SMU
+ * Programmer(s): Mustafa Aggul @ SMU
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2023, Lawrence Livermore National Security
@@ -12,8 +12,18 @@
  * SUNDIALS Copyright End
  *---------------------------------------------------------------
  * Example problem:
- *
- * The following test simulates a Complex-valued System of ODEs.  
+ * 
+ * In this problem, we employ existing NVectors for vectors with 
+ * complex entries: even-numbered indices store real components 
+ * while we allocate the odd-numbered indices for their imaginary 
+ * counterparts. 
+ * The length of vectors is doubled this way, which means storing 
+ * a complex vector of size N requires a real NVector of length 2*N.
+ * 
+ * For example: [1+i  2-2i] is represented as [1 1 2 -2].
+ * 
+ * The following test simulates a complex-valued system of ODEs.
+ * 
  * This is an ODE system with 2 components, Y = [u,v],
  * satisfying the equations,
  *    du/dt = -2u - v
@@ -23,7 +33,7 @@
  *
  * This program solves the problem with the DIRK method, using a
  * Newton iteration with the SUNDENSE dense linear solver, and a
- * user-supplied Jacobian routine. 
+ * user-supplied Jacobian routine.
  *-----------------------------------------------------------------*/
 
 /* Header files */

@@ -51,9 +51,9 @@ target_link_libraries(complex_ark_extended_system PUBLIC
   SUNDIALS::arkode
   m)
 
-  add_executable(complex_erk_myNVector
-  complex_erk_myNVector.c
+  add_executable(complex_erk_NVector_serial_complex
+  complex_erk_NVector_serial_complex.c
   nvector_serialcomplex.c)
-target_link_libraries(complex_erk_myNVector PUBLIC
+target_link_libraries(complex_erk_NVector_serial_complex PUBLIC
   SUNDIALS::arkode
   m)

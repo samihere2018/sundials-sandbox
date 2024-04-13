@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds @ SMU
+ * Programmer(s): Mustafa Aggul @ SMU
  * -----------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * SUNDIALS Copyright End
  * -----------------------------------------------------------------
- * These test functions check some components of a custom NVECTOR
+ * These test functions check some components of a complex NVECTOR
  * module implementation (for more thorough tests, see the main
  * SUNDIALS repository, inside examples/nvector/).
  * -----------------------------------------------------------------*/

@@ -1,15 +1,11 @@
 # sundials-sandbox
-Template repostory for codes that utilize SUNDIALS.
+Template repository for codes that utilize SUNDIALS.
 
-This includes simple implementations of customized N_Vector and SUNLinearSolver modules, along with testing routines for each.  It also includes two existing SUNDIALS examples, to serve as templates for codes that utilize the ARKODE and CVODE integrators from SUNDIALS:
+This includes simple implementations of customized N_Vector and SUNLinearSolver modules, along with testing routines for each.  It also includes four SUNDIALS examples, to serve as templates for codes that utilize the ARKODE and CVODE integrators from SUNDIALS:
 
-* Custom N_Vector module: `myNVector.h` and `myNVector.c`, with testing routine `testMyNVector.c`.
+* N_Vector module: `nvector_serialcomplex.h` and `nvector_serialcomplex.c`, with testing routine `testComplexNVector.c`.
 
-* Custom SUNLinearSolver module: `mySUNLinearSolver.h` and `mySUNLinearSolver.c`, with testing routine `testMySUNLinearSolver.c`.
-
-* ARKODE example problem: `ark_analytic_nonlin.c`.  This uses ARKODE's "ERKStep" solver module, and the serial N_Vector module from SUNDIALS.
-
-* CVODE example problem: `cvRoberts_dns.c`.  This uses CVODE's BDF solver, the serial N_Vector module, and the dense SUNMatrix and SUNLinearSolver modules from SUNDIALS.
+* SUNLinearSolver module: `sunlinsol_sptfqmrcomplex.h` and `sunlinsol_sptfqmrcomplex.c`, with testing routine `testComplexSUNLinearSolver.c`.
 
 This repository provides a simple `CMakeLists.txt` file to compile each of the above codes against a given SUNDIALS installation.
 

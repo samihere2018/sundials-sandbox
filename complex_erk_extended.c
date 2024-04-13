@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------
- * Programmer(s): Daniel R. Reynolds @ SMU
+ * Programmer(s): Mustafa Aggul @ SMU
  *---------------------------------------------------------------
  * SUNDIALS Copyright Start
  * Copyright (c) 2002-2024, Lawrence Livermore National Security
@@ -12,8 +12,17 @@
  * SUNDIALS Copyright End
  *---------------------------------------------------------------
  * Example problem:
- *
- * The following is a simple complex-valued IVP with analytical
+ * 
+ * In this problem, we employ existing NVectors for vectors with 
+ * complex entries: even-numbered indices store real components 
+ * while we allocate the odd-numbered indices for their imaginary 
+ * counterparts. 
+ * The length of vectors is doubled this way, which means storing 
+ * a complex vector of size N requires a real NVector of length 2*N.
+ * 
+ * For example: [1+i  2-2i] is represented as [1 1 2 -2].
+ * 
+ * The following is a simple complex-valued IVP
  *     dy/dt = y*t + 2i
  * for t in the interval [0.0, 1.0], with initial condition: y=1+2i.
  *
