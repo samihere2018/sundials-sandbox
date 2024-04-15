@@ -111,13 +111,7 @@ SUNDIALS_EXPORT
 suncomplextype* N_VGetArrayPointer_SComplex(N_Vector v);
 
 SUNDIALS_EXPORT
-sunrealtype* N_VGetArrayPointer_Real(N_Vector v);
-
-SUNDIALS_EXPORT
 void N_VSetArrayPointer_SComplex(suncomplextype* v_data, N_Vector v);
-
-SUNDIALS_EXPORT
-void N_VSetArrayPointer_Real(sunrealtype* v_data, N_Vector v);
 
 /* standard vector operations */
 SUNDIALS_EXPORT

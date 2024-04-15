@@ -86,12 +86,6 @@ N_Vector N_VNewEmpty_SComplex(sunindextype length, SUNContext sunctx)
   v->ops->nvcloneempty      = N_VCloneEmpty_SComplex;
   v->ops->nvdestroy         = N_VDestroy_SComplex;
   v->ops->nvspace           = N_VSpace_SComplex;
-
-  // v->ops->nvgetarraypointer = N_VGetArrayPointer_SComplex;
-  v->ops->nvgetarraypointer = N_VGetArrayPointer_Real;
-  
-  // v->ops->nvsetarraypointer = N_VSetArrayPointer_SComplex;
-  v->ops->nvsetarraypointer = N_VSetArrayPointer_Real;
   
   v->ops->nvgetlength       = N_VGetLength_SComplex;
   v->ops->nvgetlocallength  = N_VGetLength_SComplex;
@@ -368,23 +362,8 @@ suncomplextype* N_VGetArrayPointer_SComplex(N_Vector v)
   return ((suncomplextype*)CSNV_COMPLEX_DATA(v));
 }
 
-sunrealtype* N_VGetArrayPointer_Real(N_Vector v)
-{
-  printf("Calling N_VGetArrayPointer_Real\n");
-  return ((suncomplextype*)CSNV_COMPLEX_DATA(v));
-}
-
 void N_VSetArrayPointer_SComplex(suncomplextype* v_data, N_Vector v)
 {
-  if (CSNV_LENGTH(v) > 0) { CSNV_COMPLEX_DATA(v) = v_data; }
-
-  return;
-}
-
-void N_VSetArrayPointer_Real(sunrealtype* v_data, N_Vector v)
-{
-
-  printf("Calling N_VSetArrayPointer_Real\n");
   if (CSNV_LENGTH(v) > 0) { CSNV_COMPLEX_DATA(v) = v_data; }
 
   return;
