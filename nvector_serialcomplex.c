@@ -157,7 +157,6 @@ N_Vector N_VNewEmpty_SComplex(sunindextype length, SUNContext sunctx)
   /* Initialize content */
   content->length   = length;
   content->own_data = SUNFALSE;
-  content->real_data = NULL;
   content->complex_data = NULL;
 
   return (v);
@@ -291,7 +290,6 @@ N_Vector N_VCloneEmpty_SComplex(N_Vector w)
   /* Initialize content */
   content->length   = CSNV_LENGTH(w);
   content->own_data = SUNFALSE;
-  content->real_data = NULL;
   content->complex_data = NULL;
 
   return (v);
@@ -300,7 +298,6 @@ N_Vector N_VCloneEmpty_SComplex(N_Vector w)
 N_Vector N_VClone_SComplex(N_Vector w)
 {
   N_Vector v;
-  sunrealtype* real_data;
   suncomplextype* complex_data;
   sunindextype length;
 
@@ -312,20 +309,13 @@ N_Vector N_VClone_SComplex(N_Vector w)
 
   /* Create complex_data */
   complex_data = CSNV_COMPLEX_DATA(v) = NULL;
-  real_data = CSNV_REAL_DATA(v) = NULL;
   if (length > 0)
   {
     complex_data = (suncomplextype*)malloc(length * sizeof(suncomplextype));
     if (complex_data == NULL) { return NULL; }
     
-    real_data = (sunrealtype*)malloc(length * sizeof(sunrealtype));
-    if (real_data == NULL) { return NULL; }
-
-    /* Attach real_data */
-    CSNV_OWN_DATA(v) = SUNTRUE;
-    CSNV_REAL_DATA(v)     = real_data;
-
     /* Attach complex_data */
+    CSNV_OWN_DATA(v) = SUNTRUE;
     CSNV_COMPLEX_DATA(v)     = complex_data;
   }
 
@@ -344,11 +334,6 @@ void N_VDestroy_SComplex(N_Vector v)
     {
       free(CSNV_COMPLEX_DATA(v));
       CSNV_COMPLEX_DATA(v) = NULL;
-    }
-    if (CSNV_OWN_DATA(v) && (CSNV_REAL_DATA(v) != NULL))
-    {
-      free(CSNV_REAL_DATA(v));
-      CSNV_REAL_DATA(v) = NULL;
     }
     free(v->content);
     v->content = NULL;
@@ -386,7 +371,7 @@ suncomplextype* N_VGetArrayPointer_SComplex(N_Vector v)
 sunrealtype* N_VGetArrayPointer_Real(N_Vector v)
 {
   printf("Calling N_VGetArrayPointer_Real\n");
-  return ((sunrealtype*)CSNV_REAL_DATA(v));
+  return ((suncomplextype*)CSNV_COMPLEX_DATA(v));
 }
 
 void N_VSetArrayPointer_SComplex(suncomplextype* v_data, N_Vector v)
@@ -400,7 +385,7 @@ void N_VSetArrayPointer_Real(sunrealtype* v_data, N_Vector v)
 {
 
   printf("Calling N_VSetArrayPointer_Real\n");
-  if (CSNV_LENGTH(v) > 0) { CSNV_REAL_DATA(v) = v_data; }
+  if (CSNV_LENGTH(v) > 0) { CSNV_COMPLEX_DATA(v) = v_data; }
 
   return;
 }

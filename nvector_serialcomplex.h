@@ -61,8 +61,6 @@ typedef struct _CS_NVectorContent* CS_NVectorContent;
 
 #define CSNV_OWN_DATA(v) (CSNV_CONTENT(v)->own_data)
 
-#define CSNV_REAL_DATA(v) (CSNV_CONTENT(v)->real_data)
-
 #define CSNV_COMPLEX_DATA(v) (CSNV_CONTENT(v)->complex_data)
 
 #define CSNV_Ith(v, i) (CSNV_COMPLEX_DATA(v)[i])
