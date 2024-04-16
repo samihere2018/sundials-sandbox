@@ -42,7 +42,6 @@ struct _CS_NVectorContent
 {
   sunindextype length;          /* vector length       */
   sunbooleantype own_data;      /* data ownership flag */
-  sunrealtype* real_data;       /* real data array     */
   suncomplextype* complex_data; /* complex data array  */
 };
 
