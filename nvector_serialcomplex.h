@@ -42,7 +42,6 @@ struct _CS_NVectorContent
 {
   sunindextype length;          /* vector length       */
   sunbooleantype own_data;      /* data ownership flag */
-  sunrealtype* real_data;       /* real data array     */
   suncomplextype* complex_data; /* complex data array  */
 };
 
@@ -60,8 +59,6 @@ typedef struct _CS_NVectorContent* CS_NVectorContent;
 #define CSNV_LENGTH(v) (CSNV_CONTENT(v)->length)
 
 #define CSNV_OWN_DATA(v) (CSNV_CONTENT(v)->own_data)
-
-#define CSNV_REAL_DATA(v) (CSNV_CONTENT(v)->real_data)
 
 #define CSNV_COMPLEX_DATA(v) (CSNV_CONTENT(v)->complex_data)
 
@@ -113,13 +110,7 @@ SUNDIALS_EXPORT
 suncomplextype* N_VGetArrayPointer_SComplex(N_Vector v);
 
 SUNDIALS_EXPORT
-sunrealtype* N_VGetArrayPointer_Real(N_Vector v);
-
-SUNDIALS_EXPORT
 void N_VSetArrayPointer_SComplex(suncomplextype* v_data, N_Vector v);
-
-SUNDIALS_EXPORT
-void N_VSetArrayPointer_Real(sunrealtype* v_data, N_Vector v);
 
 /* standard vector operations */
 SUNDIALS_EXPORT

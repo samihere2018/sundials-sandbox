@@ -513,7 +513,7 @@ int SUNLinSolSolve_SComplex(SUNLinearSolver S, SUNMatrix A, N_Vector x,
       {
         temp_val = (sunrealtype)N_VDotProd_SComplex(r[1], r[1]);
         temp_val = SUNRsqrt(temp_val);
-        omega    = N_VDotProd_SComplex(r[0], r[0]);
+        omega    = (sunrealtype)N_VDotProd_SComplex(r[0], r[0]);
         omega = SUNRsqrt(SUNRsqrt(omega) * temp_val);
         N_VLinearSum_SComplex(ONE, u, SUNSQR(v_bar) * eta / alpha, d, d);
       }
