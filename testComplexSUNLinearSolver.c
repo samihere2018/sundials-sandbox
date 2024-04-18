@@ -40,15 +40,19 @@
 #define FIVE     SUN_RCONST(5.0)
 #define THOUSAND SUN_RCONST(1000.0)
 
-#define SOMECOMPLEXNUMBER  (2.0 + 5.0*I)
+#define SOMECOMPLEXNUMBERd    (2.0 + 5.0*I)
+#define SOMECOMPLEXNUMBERup   (-1.0 + 2.0*I)
+#define SOMECOMPLEXNUMBERlow  (3.0 - 4.0*I)
 
 /* user data structure */
 typedef struct
 {
-  sunindextype N; /* problem size */
-  N_Vector d;     /* matrix diagonal */
-  N_Vector s1;    /* scaling vectors */
-  N_Vector s2;
+  sunindextype N;       /* problem size */
+  N_Vector d;           /* matrix diagonal */
+  N_Vector s1;          /* scaling vector */
+  N_Vector s2;          /* scaling vector */
+  suncomplextype up;    /* nondiagonal entries of the matrix */
+  suncomplextype low;  /* nondiagonal entries of the matrix */
 } UserData;
 
 /* private functions */
@@ -165,13 +169,15 @@ int main(int argc, char* argv[])
   if (check_flag(ProbData.s1, "N_VClone_SComplex", 0)) { return 1; }
   ProbData.s2 = N_VClone_SComplex(x);
   if (check_flag(ProbData.s2, "N_VClone_SComplex", 0)) { return 1; }
+  ProbData.up = SOMECOMPLEXNUMBERup;
+  ProbData.low = SOMECOMPLEXNUMBERlow;
 
-  /* Fill xhat vector with uniform random data in [1,2] */
+  /* Fill xhat vector with 2,3,4 ... */
   vecdata = N_VGetArrayPointer_SComplex(xhat);
-  for (i = 0; i < ProbData.N; i++) { vecdata[i] = 1.0 + (suncomplextype)i /*urand()*/; }
+  for (i = 0; i < ProbData.N; i++) { vecdata[i] = 1.0 + (suncomplextype)i; }
 
   /* Fill Jacobi vector with matrix diagonal */
-  N_VConst_SComplex(SOMECOMPLEXNUMBER, ProbData.d);
+  N_VConst_SComplex(SOMECOMPLEXNUMBERd, ProbData.d);
 
   /* Create Custom linear solver */
   LS = SUNLinSol_SComplex(x, pretype, maxl, sunctx);
@@ -355,7 +361,7 @@ int main(int argc, char* argv[])
 int ATimes(void* Data, N_Vector v_vec, N_Vector z_vec)
 {
   /* local variables */
-  suncomplextype *v, *z, *s1, *s2;
+  suncomplextype *v, *z, *s1, *s2, *diag, up, low;
   sunindextype i, N;
   UserData* ProbData;
 
@@ -370,19 +376,23 @@ int ATimes(void* Data, N_Vector v_vec, N_Vector z_vec)
   s2 = N_VGetArrayPointer_SComplex(ProbData->s2);
   if (check_flag(s2, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
   N = ProbData->N;
+  up = ProbData->up;
+  low = ProbData->low;
+  diag = N_VGetArrayPointer_SComplex(ProbData->d);
+  if (check_flag(diag, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
 
   /* perform product at the left domain boundary (note: v is zero at the boundary)*/
-  z[0] = (SOMECOMPLEXNUMBER * v[0] * s2[0] - v[1] * s2[1]) / s1[0];
+  z[0] = (diag[0] * v[0] * s2[0] + v[1] * s2[1] * up) / s1[0];
 
   /* iterate through interior of the domain, performing product */
   for (i = 1; i < N - 1; i++)
   {
-    z[i] = (-v[i - 1] * s2[i - 1] + SOMECOMPLEXNUMBER * v[i] * s2[i] - v[i + 1] * s2[i + 1]) /
+    z[i] = (-v[i - 1] * s2[i - 1] * low + diag[i] * v[i] * s2[i] + v[i + 1] * s2[i + 1] * up) /
            s1[i];
   }
 
   /* perform product at the right domain boundary (note: v is zero at the boundary)*/
-  z[N - 1] = (-v[N - 2] * s2[N - 2] + SOMECOMPLEXNUMBER * v[N - 1] * s2[N - 1]) / s1[N - 1];
+  z[N - 1] = (-v[N - 2] * s2[N - 2] * low + diag[N - 1] * v[N - 1] * s2[N - 1]) / s1[N - 1];
 
   /* return with success */
   return 0;

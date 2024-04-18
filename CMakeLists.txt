@@ -57,3 +57,11 @@ target_link_libraries(complex_ark_extended_system PUBLIC
 target_link_libraries(complex_erk_NVector_serial_complex PUBLIC
   SUNDIALS::arkode
   m)
+
+  add_executable(complex_IMEX
+  complex_IMEX.c
+  nvector_serialcomplex.c
+  sunlinsol_sptfqmrcomplex.c)
+target_link_libraries(complex_IMEX PUBLIC
+  SUNDIALS::arkode
+  m)

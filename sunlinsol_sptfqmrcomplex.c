@@ -121,7 +121,7 @@ SUNLinearSolver SUNLinSol_SComplex(N_Vector y, int pretype, int maxl,
   if (content->v == NULL) { return NULL; }
   content->p = N_VClone_SComplex(y);
   if (content->p == NULL) { return NULL; }
-  content->r = N_VCloneVectorArray(2, y);     // is called in sundials_nvector.h, not in nvector_serialcomplex.h
+  content->r = N_VCloneVectorArray(2, y);
   if (content->r == NULL) { return NULL; }
   content->u = N_VClone_SComplex(y);
   if (content->u == NULL) { return NULL; }
