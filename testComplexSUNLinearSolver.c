@@ -382,12 +382,12 @@ int ATimes(void* Data, N_Vector v_vec, N_Vector z_vec)
   if (check_flag(diag, "N_VGetArrayPointer_SComplex", 0)) { return 1; }
 
   /* perform product at the left domain boundary (note: v is zero at the boundary)*/
-  z[0] = (diag[0] * v[0] * s2[0] + v[1] * s2[1] * up) / s1[0];
+  z[0] = (diag[0] * v[0] * s2[0] - v[1] * s2[1] * up) / s1[0];
 
   /* iterate through interior of the domain, performing product */
   for (i = 1; i < N - 1; i++)
   {
-    z[i] = (-v[i - 1] * s2[i - 1] * low + diag[i] * v[i] * s2[i] + v[i + 1] * s2[i + 1] * up) /
+    z[i] = (-v[i - 1] * s2[i - 1] * low + diag[i] * v[i] * s2[i] - v[i + 1] * s2[i + 1] * up) /
            s1[i];
   }
 
