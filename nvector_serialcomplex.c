@@ -180,8 +180,8 @@ N_Vector N_VNew_SComplex(sunindextype length, SUNContext sunctx)
   }
 
   /* Attach data */
-  CSNV_OWN_DATA(v) = SUNTRUE;
-  CSNV_COMPLEX_DATA(v) = complex_data;
+  NV_OWN_DATA_CS(v) = SUNTRUE;
+  NV_COMPLEX_DATA_CS(v) = complex_data;
 
   return (v);
 }
@@ -204,8 +204,8 @@ N_Vector N_VMake_SComplex(sunindextype length, suncomplextype* v_data,
   if (length > 0)
   {
     /* Attach data */
-    CSNV_OWN_DATA(v) = SUNFALSE;
-    CSNV_COMPLEX_DATA(v) = v_data;
+    NV_OWN_DATA_CS(v) = SUNFALSE;
+    NV_COMPLEX_DATA_CS(v) = v_data;
   }
 
   return (v);
@@ -214,7 +214,7 @@ N_Vector N_VMake_SComplex(sunindextype length, suncomplextype* v_data,
 /* ----------------------------------------------------------------------------
  * Function to return number of vector elements
  */
-sunindextype N_VGetLength_SComplex(N_Vector v) { return CSNV_LENGTH(v); }
+sunindextype N_VGetLength_SComplex(N_Vector v) { return NV_LENGTH_CS(v); }
 
 /* ----------------------------------------------------------------------------
  * Function to print the a serial vector to stdout
@@ -236,8 +236,8 @@ void N_VPrintFile_SComplex(N_Vector x, FILE* outfile)
 
   xd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   for (i = 0; i < N; i++)
   {
@@ -282,7 +282,7 @@ N_Vector N_VCloneEmpty_SComplex(N_Vector w)
   v->content = content;
 
   /* Initialize content */
-  content->length   = CSNV_LENGTH(w);
+  content->length   = NV_LENGTH_CS(w);
   content->own_data = SUNFALSE;
   content->complex_data = NULL;
 
@@ -299,18 +299,18 @@ N_Vector N_VClone_SComplex(N_Vector w)
   v = N_VCloneEmpty_SComplex(w);
   if (v == NULL) { return NULL; }
 
-  length = CSNV_LENGTH(w);
+  length = NV_LENGTH_CS(w);
 
   /* Create complex_data */
-  complex_data = CSNV_COMPLEX_DATA(v) = NULL;
+  complex_data = NV_COMPLEX_DATA_CS(v) = NULL;
   if (length > 0)
   {
     complex_data = (suncomplextype*)malloc(length * sizeof(suncomplextype));
     if (complex_data == NULL) { return NULL; }
     
     /* Attach complex_data */
-    CSNV_OWN_DATA(v) = SUNTRUE;
-    CSNV_COMPLEX_DATA(v)     = complex_data;
+    NV_OWN_DATA_CS(v) = SUNTRUE;
+    NV_COMPLEX_DATA_CS(v)     = complex_data;
   }
 
   return (v);
@@ -324,10 +324,10 @@ void N_VDestroy_SComplex(N_Vector v)
   if (v->content != NULL)
   {
     /* free data array if it's owned by the vector */
-    if (CSNV_OWN_DATA(v) && (CSNV_COMPLEX_DATA(v) != NULL))
+    if (NV_OWN_DATA_CS(v) && (NV_COMPLEX_DATA_CS(v) != NULL))
     {
-      free(CSNV_COMPLEX_DATA(v));
-      CSNV_COMPLEX_DATA(v) = NULL;
+      free(NV_COMPLEX_DATA_CS(v));
+      NV_COMPLEX_DATA_CS(v) = NULL;
     }
     free(v->content);
     v->content = NULL;
@@ -350,7 +350,7 @@ void N_VSpace_SComplex(N_Vector v, sunindextype* lrw, sunindextype* liw)
   if (lrw == NULL) { return; }
   if (liw == NULL) { return; }
 
-  *lrw = CSNV_LENGTH(v);
+  *lrw = NV_LENGTH_CS(v);
   *liw = 1;
 
   return;
@@ -359,12 +359,12 @@ void N_VSpace_SComplex(N_Vector v, sunindextype* lrw, sunindextype* liw)
 suncomplextype* N_VGetArrayPointer_SComplex(N_Vector v)
 {
     
-  return ((suncomplextype*)CSNV_COMPLEX_DATA(v));
+  return ((suncomplextype*)NV_COMPLEX_DATA_CS(v));
 }
 
 void N_VSetArrayPointer_SComplex(suncomplextype* v_data, N_Vector v)
 {
-  if (CSNV_LENGTH(v) > 0) { CSNV_COMPLEX_DATA(v) = v_data; }
+  if (NV_LENGTH_CS(v) > 0) { NV_COMPLEX_DATA_CS(v) = v_data; }
 
   return;
 }
@@ -454,10 +454,10 @@ void N_VLinearSum_SComplex(suncomplextype a, N_Vector x, suncomplextype b, N_Vec
      (2) a == 0.0, b == other - user should have called N_VScale
      (3) a,b == other, a !=b, a != -b */
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + (b * yd[i]); }
 
@@ -550,10 +550,10 @@ void N_VLinearSum_Real(sunrealtype a, N_Vector x, sunrealtype b, N_Vector y,
      (2) a == 0.0, b == other - user should have called N_VScale
      (3) a,b == other, a !=b, a != -b */
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + (b * yd[i]); }
 
@@ -567,8 +567,8 @@ void N_VConst_SComplex(suncomplextype c, N_Vector z)
 
   zd = NULL;
 
-  N  = CSNV_LENGTH(z);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(z);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = c; }
 
@@ -582,8 +582,8 @@ void N_VConst_Real(sunrealtype c, N_Vector z)
 
   zd = NULL;
 
-  N  = CSNV_LENGTH(z);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(z);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (suncomplextype)c; }
 
@@ -597,10 +597,10 @@ void N_VProd_SComplex(N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] * yd[i]; }
 
@@ -614,10 +614,10 @@ void N_VDiv_SComplex(N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
   
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] / yd[i]; }
 
@@ -642,9 +642,9 @@ void N_VScale_SComplex(suncomplextype c, N_Vector x, N_Vector z)
   else if ((creal(c) == -ONE) && (cimag(c) == ZERO)) { VNeg_SComplex(x, z); }
   else
   {
-    N  = CSNV_LENGTH(x);
-    xd = CSNV_COMPLEX_DATA(x);
-    zd = CSNV_COMPLEX_DATA(z);
+    N  = NV_LENGTH_CS(x);
+    xd = NV_COMPLEX_DATA_CS(x);
+    zd = NV_COMPLEX_DATA_CS(z);
     for (i = 0; i < N; i++) { zd[i] = c * xd[i]; }
   }
 
@@ -668,9 +668,9 @@ void N_VScale_Real(sunrealtype c, N_Vector x, N_Vector z)
   else if ((creal(c) == -ONE) && (cimag(c) == ZERO)) { VNeg_SComplex(x, z); }
   else
   {
-    N  = CSNV_LENGTH(x);
-    xd = CSNV_COMPLEX_DATA(x);
-    zd = CSNV_COMPLEX_DATA(z);
+    N  = NV_LENGTH_CS(x);
+    xd = NV_COMPLEX_DATA_CS(x);
+    zd = NV_COMPLEX_DATA_CS(z);
     for (i = 0; i < N; i++) { zd[i] = c * xd[i]; }
   }
 
@@ -686,9 +686,9 @@ void N_VAbs_SComplex(N_Vector x, N_Vector z)
 
   xd = zd = NULL;
   
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = SUNCabs(xd[i]); }
 
@@ -702,9 +702,9 @@ void N_VInv_SComplex(N_Vector x, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (suncomplextype)ONE / xd[i]; }
 
@@ -718,9 +718,9 @@ void N_VAddConst_SComplex(N_Vector x, suncomplextype b, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] + b; }
 
@@ -734,9 +734,9 @@ void N_VAddConst_Real(N_Vector x, sunrealtype b, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] + b; }
 
@@ -751,9 +751,9 @@ suncomplextype N_VDotProd_SComplex(N_Vector x, N_Vector y)
   sum = (suncomplextype)ZERO;
   xd = yd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
 
   for (i = 0; i < N; i++) { sum += xd[i] * conj(yd[i]); }
 
@@ -771,9 +771,9 @@ sunrealtype N_VDotProd_Real(N_Vector x, N_Vector y)
   sum = ZERO;
   xd = yd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
 
   for (i = 0; i < N; i++) { sum += xd[i] * yd[i]; }
 
@@ -789,8 +789,8 @@ sunrealtype N_VMaxNorm_SComplex(N_Vector x)
   max = ZERO;
   xd  = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   for (i = 0; i < N; i++)
   {
@@ -803,7 +803,7 @@ sunrealtype N_VMaxNorm_SComplex(N_Vector x)
 sunrealtype N_VWrmsNorm_SComplex(N_Vector x, N_Vector w)
 {
   sunrealtype norm = N_VWSqrSumLocal_SComplex(x, w);
-  norm = SUNRsqrt(norm / CSNV_LENGTH(x));
+  norm = SUNRsqrt(norm / NV_LENGTH_CS(x));
   return norm;
 }
 
@@ -816,9 +816,9 @@ sunrealtype N_VWSqrSumLocal_SComplex(N_Vector x, N_Vector w)
   sum = ZERO;
   xd = wd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  wd = CSNV_COMPLEX_DATA(w);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  wd = NV_COMPLEX_DATA_CS(w);
 
   for (i = 0; i < N; i++)
   {
@@ -838,9 +838,9 @@ sunrealtype N_VWL2Norm_SComplex(N_Vector x, N_Vector w)
   sum = ZERO;
   xd = wd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  wd = CSNV_COMPLEX_DATA(w);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  wd = NV_COMPLEX_DATA_CS(w);
 
   for (i = 0; i < N; i++)
   {
@@ -860,8 +860,8 @@ sunrealtype N_VL1Norm_SComplex(N_Vector x)
   sum = ZERO;
   xd  = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   for (i = 0; i < N; i++) { sum += SUNCabs(xd[i]); }
 
@@ -900,8 +900,8 @@ SUNErrCode N_VLinearCombination_SComplex(int nvec, suncomplextype* c, N_Vector* 
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(z);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(z);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   /*
    * X[0] += c[i]*X[i], i = 1,...,nvec-1
@@ -910,7 +910,7 @@ SUNErrCode N_VLinearCombination_SComplex(int nvec, suncomplextype* c, N_Vector* 
   {
     for (i = 1; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -924,7 +924,7 @@ SUNErrCode N_VLinearCombination_SComplex(int nvec, suncomplextype* c, N_Vector* 
     for (j = 0; j < N; j++) { zd[j] *= c[0]; }
     for (i = 1; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -933,11 +933,11 @@ SUNErrCode N_VLinearCombination_SComplex(int nvec, suncomplextype* c, N_Vector* 
   /*
    * z = sum{ c[i] * X[i] }, i = 0,...,nvec-1
    */
-  xd = CSNV_COMPLEX_DATA(X[0]);
+  xd = NV_COMPLEX_DATA_CS(X[0]);
   for (j = 0; j < N; j++) { zd[j] = c[0] * xd[j]; }
   for (i = 1; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
     for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
   }
 
@@ -970,8 +970,8 @@ SUNErrCode N_VLinearCombination_Real(int nvec, sunrealtype* c, N_Vector* X,
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(z);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(z);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   /*
    * X[0] += c[i]*X[i], i = 1,...,nvec-1
@@ -980,7 +980,7 @@ SUNErrCode N_VLinearCombination_Real(int nvec, sunrealtype* c, N_Vector* X,
   {
     for (i = 1; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -994,7 +994,7 @@ SUNErrCode N_VLinearCombination_Real(int nvec, sunrealtype* c, N_Vector* X,
     for (j = 0; j < N; j++) { zd[j] *= c[0]; }
     for (i = 1; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -1003,11 +1003,11 @@ SUNErrCode N_VLinearCombination_Real(int nvec, sunrealtype* c, N_Vector* X,
   /*
    * z = sum{ c[i] * X[i] }, i = 0,...,nvec-1
    */
-  xd = CSNV_COMPLEX_DATA(X[0]);
+  xd = NV_COMPLEX_DATA_CS(X[0]);
   for (j = 0; j < N; j++) { zd[j] = c[0] * xd[j]; }
   for (i = 1; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
     for (j = 0; j < N; j++) { zd[j] += c[i] * xd[j]; }
   }
 
@@ -1034,8 +1034,8 @@ SUNErrCode N_VScaleAddMulti_SComplex(int nvec, suncomplextype* a, N_Vector x,
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   /*
    * Y[i][j] += a[i] * x[j]
@@ -1044,7 +1044,7 @@ SUNErrCode N_VScaleAddMulti_SComplex(int nvec, suncomplextype* a, N_Vector x,
   {
     for (i = 0; i < nvec; i++)
     {
-      yd = CSNV_COMPLEX_DATA(Y[i]);
+      yd = NV_COMPLEX_DATA_CS(Y[i]);
       for (j = 0; j < N; j++) { yd[j] += a[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -1055,8 +1055,8 @@ SUNErrCode N_VScaleAddMulti_SComplex(int nvec, suncomplextype* a, N_Vector x,
    */
   for (i = 0; i < nvec; i++)
   {
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a[i] * xd[j] + yd[j]; }
   }
   return SUN_SUCCESS;
@@ -1082,8 +1082,8 @@ SUNErrCode N_VScaleAddMulti_Real(int nvec, sunrealtype* a, N_Vector x,
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   /*
    * Y[i][j] += a[i] * x[j]
@@ -1092,7 +1092,7 @@ SUNErrCode N_VScaleAddMulti_Real(int nvec, sunrealtype* a, N_Vector x,
   {
     for (i = 0; i < nvec; i++)
     {
-      yd = CSNV_COMPLEX_DATA(Y[i]);
+      yd = NV_COMPLEX_DATA_CS(Y[i]);
       for (j = 0; j < N; j++) { yd[j] += a[i] * xd[j]; }
     }
     return SUN_SUCCESS;
@@ -1103,8 +1103,8 @@ SUNErrCode N_VScaleAddMulti_Real(int nvec, sunrealtype* a, N_Vector x,
    */
   for (i = 0; i < nvec; i++)
   {
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a[i] * xd[j] + yd[j]; }
   }
   return SUN_SUCCESS;
@@ -1129,13 +1129,13 @@ SUNErrCode N_VDotProdMulti_SComplex(int nvec, N_Vector x, N_Vector* Y,
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   /* compute multiple dot products */
   for (i = 0; i < nvec; i++)
   {
-    yd          = CSNV_COMPLEX_DATA(Y[i]);
+    yd          = NV_COMPLEX_DATA_CS(Y[i]);
     dotprods[i] = (suncomplextype)ZERO;
     for (j = 0; j < N; j++) { dotprods[i] += xd[j] * conj(yd[j]); }
   }
@@ -1165,13 +1165,13 @@ SUNErrCode N_VDotProdMulti_Real(int nvec, N_Vector x, N_Vector* Y,
   }
 
   /* get vector length and data array */
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   /* compute multiple dot products */
   for (i = 0; i < nvec; i++)
   {
-    yd          = CSNV_COMPLEX_DATA(Y[i]);
+    yd          = NV_COMPLEX_DATA_CS(Y[i]);
     dotprods[i] = ZERO;
     for (j = 0; j < N; j++) { dotprods[i] += xd[j] * yd[j]; }
   }
@@ -1287,14 +1287,14 @@ SUNErrCode N_VLinearSumVectorArray_SComplex(int nvec, suncomplextype a, N_Vector
   /*   (3) a,b == other, a !=b, a != -b                            */
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /* compute linear sum for each vector pair in vector arrays */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a * xd[j] + b * yd[j]; }
   }
 
@@ -1402,14 +1402,14 @@ SUNErrCode N_VLinearSumVectorArray_Real(int nvec, sunrealtype a, N_Vector* X,
   /*   (3) a,b == other, a !=b, a != -b                            */
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /* compute linear sum for each vector pair in vector arrays */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = a * xd[j] + b * yd[j]; }
   }
 
@@ -1435,7 +1435,7 @@ SUNErrCode N_VScaleVectorArray_SComplex(int nvec, suncomplextype* c, N_Vector* X
   }
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /*
    * X[i] *= c[i]
@@ -1444,7 +1444,7 @@ SUNErrCode N_VScaleVectorArray_SComplex(int nvec, suncomplextype* c, N_Vector* X
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { xd[j] *= c[i]; }
     }
     return SUN_SUCCESS;
@@ -1455,8 +1455,8 @@ SUNErrCode N_VScaleVectorArray_SComplex(int nvec, suncomplextype* c, N_Vector* X
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c[i] * xd[j]; }
   }
   return SUN_SUCCESS;
@@ -1481,7 +1481,7 @@ SUNErrCode N_VScaleVectorArray_Real(int nvec, sunrealtype* c, N_Vector* X,
   }
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /*
    * X[i] *= c[i]
@@ -1490,7 +1490,7 @@ SUNErrCode N_VScaleVectorArray_Real(int nvec, sunrealtype* c, N_Vector* X,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < N; j++) { xd[j] *= c[i]; }
     }
     return SUN_SUCCESS;
@@ -1501,8 +1501,8 @@ SUNErrCode N_VScaleVectorArray_Real(int nvec, sunrealtype* c, N_Vector* X,
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c[i] * xd[j]; }
   }
   return SUN_SUCCESS;
@@ -1525,12 +1525,12 @@ SUNErrCode N_VConstVectorArray_SComplex(int nvec, suncomplextype c, N_Vector* Z)
   }
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /* set each vector in the vector array to a constant */
   for (i = 0; i < nvec; i++)
   {
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c; }
   }
 
@@ -1554,12 +1554,12 @@ SUNErrCode N_VConstVectorArray_Real(int nvec, sunrealtype c, N_Vector* Z)
   }
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /* set each vector in the vector array to a constant */
   for (i = 0; i < nvec; i++)
   {
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = (suncomplextype)c; }
   }
 
@@ -1585,13 +1585,13 @@ SUNErrCode N_VWrmsNormVectorArray_SComplex(int nvec, N_Vector* X, N_Vector* W,
   }
 
   /* get vector length */
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   /* compute the WRMS norm for each vector in the vector array */
   for (i = 0; i < nvec; i++)
   {
-    xd     = CSNV_COMPLEX_DATA(X[i]);
-    wd     = CSNV_COMPLEX_DATA(W[i]);
+    xd     = NV_COMPLEX_DATA_CS(X[i]);
+    wd     = NV_COMPLEX_DATA_CS(W[i]);
     nrm[i] = ZERO;
     for (j = 0; j < N; j++) { nrm[i] += SUNSQR(SUNCabs(xd[j] * wd[j])); }
     nrm[i] = SUNRsqrt(nrm[i] / N);
@@ -1665,7 +1665,7 @@ SUNErrCode N_VScaleAddMultiVectorArray_SComplex(int nvec, int nsum,
    * ---------------------------- */
 
   /* get vector length */
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   /*
    * Y[i][j] += a[i] * x[j]
@@ -1674,10 +1674,10 @@ SUNErrCode N_VScaleAddMultiVectorArray_SComplex(int nvec, int nsum,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < nsum; j++)
       {
-        yd = CSNV_COMPLEX_DATA(Y[j][i]);
+        yd = NV_COMPLEX_DATA_CS(Y[j][i]);
         for (k = 0; k < N; k++) { yd[k] += a[j] * xd[k]; }
       }
     }
@@ -1689,11 +1689,11 @@ SUNErrCode N_VScaleAddMultiVectorArray_SComplex(int nvec, int nsum,
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
     for (j = 0; j < nsum; j++)
     {
-      yd = CSNV_COMPLEX_DATA(Y[j][i]);
-      zd = CSNV_COMPLEX_DATA(Z[j][i]);
+      yd = NV_COMPLEX_DATA_CS(Y[j][i]);
+      zd = NV_COMPLEX_DATA_CS(Z[j][i]);
       for (k = 0; k < N; k++) { zd[k] = a[j] * xd[k] + yd[k]; }
     }
   }
@@ -1765,7 +1765,7 @@ SUNErrCode N_VScaleAddMultiVectorArray_Real(int nvec, int nsum,
    * ---------------------------- */
 
   /* get vector length */
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   /*
    * Y[i][j] += a[i] * x[j]
@@ -1774,10 +1774,10 @@ SUNErrCode N_VScaleAddMultiVectorArray_Real(int nvec, int nsum,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
       for (j = 0; j < nsum; j++)
       {
-        yd = CSNV_COMPLEX_DATA(Y[j][i]);
+        yd = NV_COMPLEX_DATA_CS(Y[j][i]);
         for (k = 0; k < N; k++) { yd[k] += a[j] * xd[k]; }
       }
     }
@@ -1789,11 +1789,11 @@ SUNErrCode N_VScaleAddMultiVectorArray_Real(int nvec, int nsum,
    */
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
     for (j = 0; j < nsum; j++)
     {
-      yd = CSNV_COMPLEX_DATA(Y[j][i]);
-      zd = CSNV_COMPLEX_DATA(Z[j][i]);
+      yd = NV_COMPLEX_DATA_CS(Y[j][i]);
+      zd = NV_COMPLEX_DATA_CS(Z[j][i]);
       for (k = 0; k < N; k++) { zd[k] = a[j] * xd[k] + yd[k]; }
     }
   }
@@ -1879,7 +1879,7 @@ SUNErrCode N_VLinearCombinationVectorArray_SComplex(int nvec, int nsum,
    * -------------------------- */
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /*
    * X[0][j] += c[i]*X[i][j], i = 1,...,nvec-1
@@ -1888,10 +1888,10 @@ SUNErrCode N_VLinearCombinationVectorArray_SComplex(int nvec, int nsum,
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = CSNV_COMPLEX_DATA(Z[j]);
+      zd = NV_COMPLEX_DATA_CS(Z[j]);
       for (i = 1; i < nsum; i++)
       {
-        xd = CSNV_COMPLEX_DATA(X[i][j]);
+        xd = NV_COMPLEX_DATA_CS(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -1905,11 +1905,11 @@ SUNErrCode N_VLinearCombinationVectorArray_SComplex(int nvec, int nsum,
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = CSNV_COMPLEX_DATA(Z[j]);
+      zd = NV_COMPLEX_DATA_CS(Z[j]);
       for (k = 0; k < N; k++) { zd[k] *= c[0]; }
       for (i = 1; i < nsum; i++)
       {
-        xd = CSNV_COMPLEX_DATA(X[i][j]);
+        xd = NV_COMPLEX_DATA_CS(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -1921,12 +1921,12 @@ SUNErrCode N_VLinearCombinationVectorArray_SComplex(int nvec, int nsum,
    */
   for (j = 0; j < nvec; j++)
   {
-    xd = CSNV_COMPLEX_DATA(X[0][j]);
-    zd = CSNV_COMPLEX_DATA(Z[j]);
+    xd = NV_COMPLEX_DATA_CS(X[0][j]);
+    zd = NV_COMPLEX_DATA_CS(Z[j]);
     for (k = 0; k < N; k++) { zd[k] = c[0] * xd[k]; }
     for (i = 1; i < nsum; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i][j]);
+      xd = NV_COMPLEX_DATA_CS(X[i][j]);
       for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
     }
   }
@@ -2012,7 +2012,7 @@ SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
    * -------------------------- */
 
   /* get vector length */
-  N = CSNV_LENGTH(Z[0]);
+  N = NV_LENGTH_CS(Z[0]);
 
   /*
    * X[0][j] += c[i]*X[i][j], i = 1,...,nvec-1
@@ -2021,10 +2021,10 @@ SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = CSNV_COMPLEX_DATA(Z[j]);
+      zd = NV_COMPLEX_DATA_CS(Z[j]);
       for (i = 1; i < nsum; i++)
       {
-        xd = CSNV_COMPLEX_DATA(X[i][j]);
+        xd = NV_COMPLEX_DATA_CS(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -2038,11 +2038,11 @@ SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
   {
     for (j = 0; j < nvec; j++)
     {
-      zd = CSNV_COMPLEX_DATA(Z[j]);
+      zd = NV_COMPLEX_DATA_CS(Z[j]);
       for (k = 0; k < N; k++) { zd[k] *= c[0]; }
       for (i = 1; i < nsum; i++)
       {
-        xd = CSNV_COMPLEX_DATA(X[i][j]);
+        xd = NV_COMPLEX_DATA_CS(X[i][j]);
         for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
       }
     }
@@ -2054,12 +2054,12 @@ SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
    */
   for (j = 0; j < nvec; j++)
   {
-    xd = CSNV_COMPLEX_DATA(X[0][j]);
-    zd = CSNV_COMPLEX_DATA(Z[j]);
+    xd = NV_COMPLEX_DATA_CS(X[0][j]);
+    zd = NV_COMPLEX_DATA_CS(Z[j]);
     for (k = 0; k < N; k++) { zd[k] = c[0] * xd[k]; }
     for (i = 1; i < nsum; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i][j]);
+      xd = NV_COMPLEX_DATA_CS(X[i][j]);
       for (k = 0; k < N; k++) { zd[k] += c[i] * xd[k]; }
     }
   }
@@ -2074,7 +2074,7 @@ SUNErrCode N_VLinearCombinationVectorArray_Real(int nvec, int nsum,
 
 SUNErrCode N_VBufSize_SComplex(N_Vector x, sunindextype* size)
 {
-  *size = CSNV_LENGTH(x) * ((sunindextype)sizeof(suncomplextype));
+  *size = NV_LENGTH_CS(x) * ((sunindextype)sizeof(suncomplextype));
   return SUN_SUCCESS;
 }
 
@@ -2086,8 +2086,8 @@ SUNErrCode N_VBufPack_SComplex(N_Vector x, void* buf)
 
   if (buf == NULL) { return SUN_ERR_ARG_CORRUPT; }
   
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
   bd = (suncomplextype*)buf;
 
   for (i = 0; i < N; i++) { bd[i] = xd[i]; }
@@ -2103,8 +2103,8 @@ SUNErrCode N_VBufUnpack_SComplex(N_Vector x, void* buf)
 
   if (buf == NULL) { return SUN_ERR_ARG_CORRUPT; }
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
   bd = (suncomplextype*)buf;
 
   for (i = 0; i < N; i++) { xd[i] = bd[i]; }
@@ -2125,9 +2125,9 @@ static void VCopy_SComplex(N_Vector x, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i]; }
 
@@ -2141,10 +2141,10 @@ static void VSum_SComplex(N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] + yd[i]; }
 
@@ -2158,10 +2158,10 @@ static void VDiff_SComplex(N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = xd[i] - yd[i]; }
 
@@ -2175,9 +2175,9 @@ static void VNeg_SComplex(N_Vector x, N_Vector z)
 
   xd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = -xd[i]; }
 
@@ -2191,10 +2191,10 @@ static void VScaleSum_SComplex(suncomplextype c, N_Vector x, N_Vector y, N_Vecto
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = c * (xd[i] + yd[i]); }
 
@@ -2208,10 +2208,10 @@ static void VScaleDiff_SComplex(suncomplextype c, N_Vector x, N_Vector y, N_Vect
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = c * (xd[i] - yd[i]); }
 
@@ -2225,10 +2225,10 @@ static void VLin1_SComplex(suncomplextype a, N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) + yd[i]; }
 
@@ -2242,10 +2242,10 @@ static void VLin2_SComplex(suncomplextype a, N_Vector x, N_Vector y, N_Vector z)
 
   xd = yd = zd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
-  zd = CSNV_COMPLEX_DATA(z);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
+  zd = NV_COMPLEX_DATA_CS(z);
 
   for (i = 0; i < N; i++) { zd[i] = (a * xd[i]) - yd[i]; }
 
@@ -2259,9 +2259,9 @@ static void Vaxpy_SComplex(suncomplextype a, N_Vector x, N_Vector y)
 
   xd = yd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
-  yd = CSNV_COMPLEX_DATA(y);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
+  yd = NV_COMPLEX_DATA_CS(y);
 
   if ((creal(a) == ONE) && (cimag(a) == ZERO))
   {
@@ -2287,8 +2287,8 @@ static void VScaleBy_SComplex(suncomplextype a, N_Vector x)
 
   xd = NULL;
 
-  N  = CSNV_LENGTH(x);
-  xd = CSNV_COMPLEX_DATA(x);
+  N  = NV_LENGTH_CS(x);
+  xd = NV_COMPLEX_DATA_CS(x);
 
   for (i = 0; i < N; i++) { xd[i] *= a; }
 
@@ -2309,13 +2309,13 @@ static void VSumVectorArray_SComplex(int nvec, N_Vector* X, N_Vector* Y, N_Vecto
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = xd[j] + yd[j]; }
   }
 }
@@ -2329,13 +2329,13 @@ static void VDiffVectorArray_SComplex(int nvec, N_Vector* X, N_Vector* Y,
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = xd[j] - yd[j]; }
   }
 }
@@ -2349,13 +2349,13 @@ static void VScaleSumVectorArray_SComplex(int nvec, suncomplextype c, N_Vector* 
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c * (xd[j] + yd[j]); }
   }
 }
@@ -2369,13 +2369,13 @@ static void VScaleDiffVectorArray_SComplex(int nvec, suncomplextype c, N_Vector*
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = c * (xd[j] - yd[j]); }
   }
 }
@@ -2389,13 +2389,13 @@ static void VLin1VectorArray_SComplex(int nvec, suncomplextype a, N_Vector* X,
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = (a * xd[j]) + yd[j]; }
   }
 }
@@ -2409,13 +2409,13 @@ static void VLin2VectorArray_SComplex(int nvec, suncomplextype a, N_Vector* X,
   suncomplextype* yd = NULL;
   suncomplextype* zd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   for (i = 0; i < nvec; i++)
   {
-    xd = CSNV_COMPLEX_DATA(X[i]);
-    yd = CSNV_COMPLEX_DATA(Y[i]);
-    zd = CSNV_COMPLEX_DATA(Z[i]);
+    xd = NV_COMPLEX_DATA_CS(X[i]);
+    yd = NV_COMPLEX_DATA_CS(Y[i]);
+    zd = NV_COMPLEX_DATA_CS(Z[i]);
     for (j = 0; j < N; j++) { zd[j] = (a * xd[j]) - yd[j]; }
   }
 }
@@ -2428,14 +2428,14 @@ static void VaxpyVectorArray_SComplex(int nvec, suncomplextype a, N_Vector* X,
   suncomplextype* xd = NULL;
   suncomplextype* yd = NULL;
 
-  N = CSNV_LENGTH(X[0]);
+  N = NV_LENGTH_CS(X[0]);
 
   if ((creal(a) == ONE) && (cimag(a) == ZERO))
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
-      yd = CSNV_COMPLEX_DATA(Y[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
+      yd = NV_COMPLEX_DATA_CS(Y[i]);
       for (j = 0; j < N; j++) { yd[j] += xd[j]; }
     }
     return;
@@ -2445,8 +2445,8 @@ static void VaxpyVectorArray_SComplex(int nvec, suncomplextype a, N_Vector* X,
   {
     for (i = 0; i < nvec; i++)
     {
-      xd = CSNV_COMPLEX_DATA(X[i]);
-      yd = CSNV_COMPLEX_DATA(Y[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
+      yd = NV_COMPLEX_DATA_CS(Y[i]);
       for (j = 0; j < N; j++) { yd[j] -= xd[j]; }
     }
     return;
@@ -2454,8 +2454,8 @@ static void VaxpyVectorArray_SComplex(int nvec, suncomplextype a, N_Vector* X,
 
   for (i = 0; i < nvec; i++)
   {
-      xd = CSNV_COMPLEX_DATA(X[i]);
-      yd = CSNV_COMPLEX_DATA(Y[i]);
+      xd = NV_COMPLEX_DATA_CS(X[i]);
+      yd = NV_COMPLEX_DATA_CS(Y[i]);
     for (j = 0; j < N; j++) { yd[j] += a * xd[j]; }
   }
 }

@@ -98,7 +98,7 @@ void set_element(N_Vector X, sunindextype i, sunrealtype val)
 sunrealtype get_element(N_Vector X, sunindextype i)
 {
   /* get i-th element of data array */
-  return CSNV_Ith(X, i);
+  return NV_Ith_CS(X, i);
 }
 
 

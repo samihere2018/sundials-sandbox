@@ -54,15 +54,15 @@ typedef struct _CS_NVectorContent* CS_NVectorContent;
  * -----------------------------------------------------------------
  */
 
-#define CSNV_CONTENT(v) ((CS_NVectorContent)(v->content))
+#define NV_CONTENT_CS(v) ((CS_NVectorContent)(v->content))
 
-#define CSNV_LENGTH(v) (CSNV_CONTENT(v)->length)
+#define NV_LENGTH_CS(v) (NV_CONTENT_CS(v)->length)
 
-#define CSNV_OWN_DATA(v) (CSNV_CONTENT(v)->own_data)
+#define NV_OWN_DATA_CS(v) (NV_CONTENT_CS(v)->own_data)
 
-#define CSNV_COMPLEX_DATA(v) (CSNV_CONTENT(v)->complex_data)
+#define NV_COMPLEX_DATA_CS(v) (NV_CONTENT_CS(v)->complex_data)
 
-#define CSNV_Ith(v, i) (CSNV_COMPLEX_DATA(v)[i])
+#define NV_Ith_CS(v, i) (NV_COMPLEX_DATA_CS(v)[i])
 
 /*
  * -----------------------------------------------------------------

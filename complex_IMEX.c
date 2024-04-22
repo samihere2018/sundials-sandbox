@@ -1,13 +1,65 @@
-/* Under construction! */
+/*-----------------------------------------------------------------
+ * Programmer(s): Daniel R. Reynolds @ SMU
+ *---------------------------------------------------------------
+ * SUNDIALS Copyright Start
+ * Copyright (c) 2002-2024, Lawrence Livermore National Security
+ * and Southern Methodist University.
+ * All rights reserved.
+ *
+ * See the top-level LICENSE and NOTICE files for details.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ * SUNDIALS Copyright End
+ *---------------------------------------------------------------
+ * Example problem:
+ *
+ * The following test simulates a brusselator problem from chemical
+ * kinetics.  This is an ODE system with 3 components, Y = [u,v,w],
+ * satisfying the equations,
+ *    du/dt = a - (w+1)*u + v*u^2
+ *    dv/dt = w*u - v*u^2
+ *    dw/dt = (b-w)/ep - w*u
+ * for t in the interval [0.0, 10.0], with initial conditions
+ * Y0 = [u0,v0,w0].
+ *
+ * We have 3 different testing scenarios:
+ *
+ * Test 1:  u0=3.9,  v0=1.1,  w0=2.8,  a=1.2,  b=2.5,  ep=1.0e-5
+ *    Here, all three components exhibit a rapid transient change
+ *    during the first 0.2 time units, followed by a slow and
+ *    smooth evolution.
+ *
+ * Test 2:  u0=1.2,  v0=3.1,  w0=3,  a=1,  b=3.5,  ep=5.0e-6
+ *    Here, w experiences a fast initial transient, jumping 0.5
+ *    within a few steps.  All values proceed smoothly until
+ *    around t=6.5, when both u and v undergo a sharp transition,
+ *    with u increaseing from around 0.5 to 5 and v decreasing
+ *    from around 6 to 1 in less than 0.5 time units.  After this
+ *    transition, both u and v continue to evolve somewhat
+ *    rapidly for another 1.4 time units, and finish off smoothly.
+ *
+ * Test 3:  u0=3,  v0=3,  w0=3.5,  a=0.5,  b=3,  ep=5.0e-4
+ *    Here, all components undergo very rapid initial transients
+ *    during the first 0.3 time units, and all then proceed very
+ *    smoothly for the remainder of the simulation.
+ *
+ * This file is hard-coded to use test 2.
+ *
+ * This program solves the problem with the DIRK method, using a
+ * Newton iteration with the SUNDENSE dense linear solver, and a
+ * user-supplied Jacobian routine.
+ *
+ * 100 outputs are printed at equal intervals, and run statistics
+ * are printed at the end.
+ *-----------------------------------------------------------------*/
 
 /* Header files */
 #include <arkode/arkode_arkstep.h> /* prototypes for ARKStep fcts., consts */
 #include <math.h>
-#include <nvector/nvector_serial.h> /* serial N_Vector types, fcts., macros */
 #include <stdio.h>
 #include <sundials/sundials_types.h>   /* def. of type 'sunrealtype' */
-#include <sunlinsol/sunlinsol_dense.h> /* access to dense SUNLinearSolver      */
-#include <sunmatrix/sunmatrix_dense.h> /* access to dense SUNMatrix            */
+#include "nvector_serialcomplex.h"
+#include "sunlinsol_sptfqmrcomplex.h"
 
 #if defined(SUNDIALS_EXTENDED_PRECISION)
 #define GSYM "Lg"
@@ -21,8 +73,15 @@
 
 /* User-supplied Functions Called by the Solver */
 static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data);
-static int Jac(sunrealtype t, N_Vector y, N_Vector fy, SUNMatrix J,
-               void* user_data, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3);
+// static int Jac(sunrealtype t, N_Vector y, N_Vector fy, SUNMatrix J,
+//                void* user_data, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3);
+
+// Preconditioner setup and solve functions
+static int PSetup(sunrealtype t, N_Vector y, N_Vector f, sunbooleantype jok,
+                  sunbooleantype* jcurPtr, sunrealtype gamma, void* user_data);
+
+static int PSolve(sunrealtype t, N_Vector y, N_Vector f, N_Vector r, N_Vector z,
+                  sunrealtype gamma, sunrealtype delta, int lr, void* user_data);
 
 /* Private function to check function return values */
 static int check_flag(void* flagvalue, const char* funcname, int opt);
@@ -44,9 +103,9 @@ int main(void)
   /* general problem variables */
   int flag;                  /* reusable error-checking flag */
   N_Vector y         = NULL; /* empty vector for storing solution */
-  SUNMatrix A        = NULL; /* empty matrix for solver */
   SUNLinearSolver LS = NULL; /* empty linear solver object */
   void* arkode_mem   = NULL; /* empty ARKode memory structure */
+  SUNAdaptController C = NULL; // Adaptivity controller
   sunrealtype rdata[3];
   FILE* UFID;
   sunrealtype t, tout;
@@ -101,11 +160,11 @@ int main(void)
   rdata[0] = a; /* set user data  */
   rdata[1] = b;
   rdata[2] = ep;
-  y        = N_VNew_Serial(NEQ, ctx); /* Create serial vector for solution */
-  if (check_flag((void*)y, "N_VNew_Serial", 0)) { return 1; }
-  NV_Ith_S(y, 0) = u0; /* Set initial conditions */
-  NV_Ith_S(y, 1) = v0;
-  NV_Ith_S(y, 2) = w0;
+  y        = N_VNew_SComplex(NEQ, ctx); /* Create serial vector for solution */
+  if (check_flag((void*)y, "N_VNew_SComplex", 0)) { return 1; }
+  NV_Ith_CS(y, 0) = u0; /* Set initial conditions */
+  NV_Ith_CS(y, 1) = v0;
+  NV_Ith_CS(y, 2) = w0;
 
   /* Call ARKStepCreate to initialize the ARK timestepper module and
      specify the right-hand side function in y'=f(t,y), the inital time
@@ -127,45 +186,55 @@ int main(void)
                                      1); /* Avoid eval of f after stage */
   if (check_flag(&flag, "ARKStepSetDeduceImplicitRhs", 1)) { return 1; }
 
-  /* Initialize dense matrix data structure and solver */
-  A = SUNDenseMatrix(NEQ, NEQ, ctx);
-  if (check_flag((void*)A, "SUNDenseMatrix", 0)) { return 1; }
-  LS = SUNLinSol_Dense(y, A, ctx);
-  if (check_flag((void*)LS, "SUNLinSol_Dense", 0)) { return 1; }
+  LS = SUNLinSol_SComplex(y, 1, 100, ctx);
+  if (check_flag((void*)LS, "SUNLinSol_SComplex", 0)) { return 1; }
 
   /* Linear solver interface */
-  flag = ARKStepSetLinearSolver(arkode_mem, LS,
-                                A); /* Attach matrix and linear solver */
+  flag = ARKStepSetLinearSolver(arkode_mem, LS, NULL);
   if (check_flag(&flag, "ARKStepSetLinearSolver", 1)) { return 1; }
-  flag = ARKStepSetJacFn(arkode_mem, Jac); /* Set Jacobian routine */
-  if (check_flag(&flag, "ARKStepSetJacFn", 1)) { return 1; }
+
+    // Attach preconditioner
+    flag = ARKStepSetPreconditioner(arkode_mem, PSetup, PSolve);
+    if (check_flag(&flag, "ARKStepSetPreconditioner", 1)) { return 1; }
+
+  // flag = ARKStepSetJacFn(arkode_mem, Jac); /* Set Jacobian routine */
+  // if (check_flag(&flag, "ARKStepSetJacFn", 1)) { return 1; }
 
   /* Open output stream for results, output comment line */
   UFID = fopen("solution.txt", "w");
-  fprintf(UFID, "# t u v w\n");
+  fprintf(UFID, "#   t             u                      v                      w\n");
 
   /* output initial condition to disk */
-  fprintf(UFID, " %.16" ESYM " %.16" ESYM " %.16" ESYM " %.16" ESYM "\n", T0,
-          NV_Ith_S(y, 0), NV_Ith_S(y, 1), NV_Ith_S(y, 2));
+  fprintf(UFID," %6.3"FSYM" | " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  \n", T0, 
+  creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)),
+  creal(NV_Ith_CS(y, 1)), cimag(NV_Ith_CS(y, 1)),
+  creal(NV_Ith_CS(y, 2)), cimag(NV_Ith_CS(y, 2)));
 
   /* Main time-stepping loop: calls ARKStepEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
   t    = T0;
   tout = T0 + dTout;
-  printf("        t           u           v           w\n");
+  printf("    t             u                      v                      w\n");
   printf("   -------------------------------------------\n");
-  printf("  %10.6" FSYM "  %10.6" FSYM "  %10.6" FSYM "  %10.6" FSYM "\n", t,
-         NV_Ith_S(y, 0), NV_Ith_S(y, 1), NV_Ith_S(y, 2));
+  printf(" %6.3"FSYM" | " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  \n", t, 
+  creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)),
+  creal(NV_Ith_CS(y, 1)), cimag(NV_Ith_CS(y, 1)),
+  creal(NV_Ith_CS(y, 2)), cimag(NV_Ith_CS(y, 2)));
 
   for (iout = 0; iout < Nt; iout++)
   {
     flag = ARKStepEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
     if (check_flag(&flag, "ARKStepEvolve", 1)) { break; }
-    printf("  %10.6" FSYM "  %10.6" FSYM "  %10.6" FSYM "  %10.6" FSYM
-           "\n", /* access/print solution */
-           t, NV_Ith_S(y, 0), NV_Ith_S(y, 1), NV_Ith_S(y, 2));
-    fprintf(UFID, " %.16" ESYM " %.16" ESYM " %.16" ESYM " %.16" ESYM "\n", t,
-            NV_Ith_S(y, 0), NV_Ith_S(y, 1), NV_Ith_S(y, 2));
+    printf(" %6.3"FSYM" | " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  \n", t, 
+    creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)),
+    creal(NV_Ith_CS(y, 1)), cimag(NV_Ith_CS(y, 1)),
+    creal(NV_Ith_CS(y, 2)), cimag(NV_Ith_CS(y, 2)));
+
+    fprintf(UFID, " %6.3"FSYM" | " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  |  " "%6.5"FSYM " + " "%6.5" FSYM "i  \n", t, 
+    creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)),
+    creal(NV_Ith_CS(y, 1)), cimag(NV_Ith_CS(y, 1)),
+    creal(NV_Ith_CS(y, 2)), cimag(NV_Ith_CS(y, 2)));
+
     if (flag >= 0)
     { /* successful solve: update time */
       tout += dTout;
@@ -217,7 +286,6 @@ int main(void)
   N_VDestroy(y);            /* Free y vector */
   ARKStepFree(&arkode_mem); /* Free integrator memory */
   SUNLinSolFree(LS);        /* Free linear solver */
-  SUNMatDestroy(A);         /* Free A matrix */
   SUNContext_Free(&ctx);    /* Free context */
 
   return 0;
@@ -234,43 +302,43 @@ static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
   sunrealtype a  = rdata[0];                    /* access data entries */
   sunrealtype b  = rdata[1];
   sunrealtype ep = rdata[2];
-  sunrealtype u  = NV_Ith_S(y, 0); /* access solution values */
-  sunrealtype v  = NV_Ith_S(y, 1);
-  sunrealtype w  = NV_Ith_S(y, 2);
+  suncomplextype u  = NV_Ith_CS(y, 0); /* access solution values */
+  suncomplextype v  = NV_Ith_CS(y, 1);
+  suncomplextype w  = NV_Ith_CS(y, 2);
 
   /* fill in the RHS function */
-  NV_Ith_S(ydot, 0) = a - (w + 1.0) * u + v * u * u;
-  NV_Ith_S(ydot, 1) = w * u - v * u * u;
-  NV_Ith_S(ydot, 2) = (b - w) / ep - w * u;
+  NV_Ith_CS(ydot, 0) = a - (w + 1.0) * u + v * u * u;
+  NV_Ith_CS(ydot, 1) = w * u - v * u * u;
+  NV_Ith_CS(ydot, 2) = (b - w) / ep - w * u;
 
   return 0; /* Return with success */
 }
 
-/* Jacobian routine to compute J(t,y) = df/dy. */
-static int Jac(sunrealtype t, N_Vector y, N_Vector fy, SUNMatrix J,
-               void* user_data, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3)
-{
-  sunrealtype* rdata = (sunrealtype*)user_data; /* cast user_data to sunrealtype */
-  sunrealtype ep = rdata[2];                    /* access data entries */
-  sunrealtype u  = NV_Ith_S(y, 0);              /* access solution values */
-  sunrealtype v  = NV_Ith_S(y, 1);
-  sunrealtype w  = NV_Ith_S(y, 2);
+// /* Jacobian routine to compute J(t,y) = df/dy. */
+// static int Jac(sunrealtype t, N_Vector y, N_Vector fy, SUNMatrix J,
+//                void* user_data, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3)
+// {
+//   sunrealtype* rdata = (sunrealtype*)user_data; /* cast user_data to sunrealtype */
+//   sunrealtype ep = rdata[2];                    /* access data entries */
+//   suncomplextype u  = NV_Ith_CS(y, 0);              /* access solution values */
+//   suncomplextype v  = NV_Ith_CS(y, 1);
+//   suncomplextype w  = NV_Ith_CS(y, 2);
 
-  /* fill in the Jacobian via SUNDenseMatrix macro, SM_ELEMENT_D (see sunmatrix_dense.h) */
-  SM_ELEMENT_D(J, 0, 0) = -(w + 1.0) + 2.0 * u * v;
-  SM_ELEMENT_D(J, 0, 1) = u * u;
-  SM_ELEMENT_D(J, 0, 2) = -u;
+//   /* fill in the Jacobian via SUNDenseMatrix macro, SM_ELEMENT_D (see sunmatrix_dense.h) */
+//   SM_ELEMENT_D(J, 0, 0) = -(w + 1.0) + 2.0 * u * v;
+//   SM_ELEMENT_D(J, 0, 1) = u * u;
+//   SM_ELEMENT_D(J, 0, 2) = -u;
 
-  SM_ELEMENT_D(J, 1, 0) = w - 2.0 * u * v;
-  SM_ELEMENT_D(J, 1, 1) = -u * u;
-  SM_ELEMENT_D(J, 1, 2) = u;
+//   SM_ELEMENT_D(J, 1, 0) = w - 2.0 * u * v;
+//   SM_ELEMENT_D(J, 1, 1) = -u * u;
+//   SM_ELEMENT_D(J, 1, 2) = u;
 
-  SM_ELEMENT_D(J, 2, 0) = -w;
-  SM_ELEMENT_D(J, 2, 1) = 0.0;
-  SM_ELEMENT_D(J, 2, 2) = -1.0 / ep - u;
+//   SM_ELEMENT_D(J, 2, 0) = -w;
+//   SM_ELEMENT_D(J, 2, 1) = 0.0;
+//   SM_ELEMENT_D(J, 2, 2) = -1.0 / ep - u;
 
-  return 0; /* Return with success */
-}
+//   return 0; /* Return with success */
+// }
 
 /*-------------------------------
  * Private helper functions
@@ -316,6 +384,27 @@ static int check_flag(void* flagvalue, const char* funcname, int opt)
     return 1;
   }
 
+  return 0;
+}
+
+// Preconditioner setup routine
+static int PSetup(sunrealtype t, N_Vector y, N_Vector f, sunbooleantype jok,
+                  sunbooleantype* jcurPtr, sunrealtype gamma, void* user_data)
+{
+  return 0;
+}
+
+// Preconditioner solve routine for Pz = r
+static int PSolve(sunrealtype t, N_Vector y, N_Vector f, N_Vector r, N_Vector z,
+                  sunrealtype gamma, sunrealtype delta, int lr, void* user_data)
+{
+  N_Vector ones;
+  ones = N_VClone_SComplex(r);
+  N_VConst_SComplex((suncomplextype)1.0, ones);
+
+  N_VProd(ones, r, z);
+
+  /* return with success */
   return 0;
 }
 

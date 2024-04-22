@@ -84,7 +84,7 @@ int main(void)
   
 double complex initial_condition = 1 + 2*I;
 
-  CSNV_Ith(y, 0) = initial_condition; /* Specify initial condition */
+  NV_Ith_CS(y, 0) = initial_condition; /* Specify initial condition */
 
   /* Call ERKStepCreate to initialize the ERK timestepper module and
      specify the right-hand side function in y'=f(t,y), the inital time
@@ -102,7 +102,7 @@ double complex initial_condition = 1 + 2*I;
   fprintf(UFID, "-----------------------------\n");
 
   /* output initial condition to disk */
-    fprintf(UFID," %.3"FSYM" | " "%.5"FSYM " + " "%.5" FSYM "i\n", T0, creal(CSNV_Ith(y, 0)), cimag(CSNV_Ith(y, 0)));
+    fprintf(UFID," %.3"FSYM" | " "%.5"FSYM " + " "%.5" FSYM "i\n", T0, creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)));
 
   /* Main time-stepping loop: calls ERKStepEvolve to perform the integration, then
      prints results.  Stops when the final time has been reached */
@@ -114,8 +114,8 @@ double complex initial_condition = 1 + 2*I;
   {
     flag = ERKStepEvolve(arkode_mem, tout, y, &t, ARK_NORMAL); /* call integrator */
     if (check_flag(&flag, "ERKStepEvolve", 1)) { break; }
-    printf("  %10.6" FSYM "%10.6" FSYM " + " "%1.6" FSYM "i\n", t, creal(CSNV_Ith(y, 0)), cimag(CSNV_Ith(y, 0))); /* access/print solution */
-    fprintf(UFID," %.3"FSYM" | " "%.5"FSYM " + " "%.5" FSYM "i\n", t, creal(CSNV_Ith(y, 0)), cimag(CSNV_Ith(y, 0)));
+    printf("  %10.6" FSYM "%10.6" FSYM " + " "%1.6" FSYM "i\n", t, creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0))); /* access/print solution */
+    fprintf(UFID," %.3"FSYM" | " "%.5"FSYM " + " "%.5" FSYM "i\n", t, creal(NV_Ith_CS(y, 0)), cimag(NV_Ith_CS(y, 0)));
     if (flag >= 0)
     { /* successful solve: update time */
       tout += dTout;
@@ -154,7 +154,7 @@ double complex initial_condition = 1 + 2*I;
 /* f routine to compute the ODE RHS function f(t,y). */
 static int f(sunrealtype t, N_Vector y, N_Vector ydot, void* user_data)
 {
-  CSNV_Ith(ydot, 0) = t * CSNV_Ith(y, 0) + 2*I;
+  NV_Ith_CS(ydot, 0) = t * NV_Ith_CS(y, 0) + 2*I;
   
   return 0;
 }
