@@ -65,11 +65,3 @@ target_link_libraries(complex_erk_NVector_serial_complex PUBLIC
 target_link_libraries(complex_IMEX PUBLIC
   SUNDIALS::arkode
   m)
-
-  add_executable(ark_brusselator
-  ark_brusselator.c
-  nvector_serialcomplex.c
-  sunlinsol_sptfqmrcomplex.c)
-target_link_libraries(ark_brusselator PUBLIC
-  SUNDIALS::arkode
-  m)
