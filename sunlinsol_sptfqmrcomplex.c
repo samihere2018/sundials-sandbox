@@ -449,7 +449,7 @@ int SUNLinSolSolve_SComplex(SUNLinearSolver S, SUNMatrix A, N_Vector x,
     (*nli)++;
 
     /* sigma = r_star^T*v */
-    sigma = N_VDotProd_SComplex(v, r_star);
+    sigma = N_VDotProd_SComplex(r_star, v); //Amihere
 
     /* alpha = rho[0]/sigma */
     alpha = rho[0] / sigma;
@@ -646,7 +646,7 @@ int SUNLinSolSolve_SComplex(SUNLinearSolver S, SUNMatrix A, N_Vector x,
     if (converged == SUNTRUE) { break; }
 
     /* rho[1] = r_star^T*r_[1] */
-    rho[1] = N_VDotProd_SComplex(r[1], r_star);
+    rho[1] = N_VDotProd_SComplex(r_star, r[1]); //Amihere
 
     /* beta = rho[1]/rho[0] */
     beta = rho[1] / rho[0];
